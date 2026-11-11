@@ -68,6 +68,20 @@ function threadOut(t, viewer) {
 }
 function offerOut(o) { return o && { id: o.id, brand: o.brandName, brandId: o.brand, cat: o.cat, to: o.to, amt: o.amt, del: o.del, what: o.what, due: o.due, status: o.status, checks: o.checks, at: o.at }; }
 
+// What happened to you lately: offers, props, comments, follows and campaign applicants.
+function notesFor(u) {
+  const out = [], mine = new Set(D.posts.filter(p => p.by === u.id).map(p => p.id)), name = id => { const x = userById(id); return x ? (x.role === 'brand' && x.brand ? x.brand.name : x.f + ' ' + x.l) : 'Someone'; };
+  const cap = id => { const p = D.posts.find(x => x.id === id); return p ? (p.tag || p.pr || p.cap).slice(0, 40) : 'your post'; };
+  for (const o of D.offers) if (o.to === u.id) out.push({ by: o.brand, k: 'offer', who: name(o.brand), t: `sent you an NIL offer: $${o.amt.toLocaleString()}`, at: o.at, go: 'deals' });
+  for (const o of D.offers) if (o.brand === u.id && o.answered) out.push({ by: o.to, k: 'offer', who: name(o.to), t: o.status === 'Active' ? `accepted your $${o.amt.toLocaleString()} offer` : 'passed on your offer', at: o.answered, go: 'messages' });
+  for (const x of D.props) if (mine.has(x.post) && x.by !== u.id && x.at) out.push({ by: x.by, k: 'props', who: name(x.by), t: `gave “${cap(x.post)}” ${x.k === 'goat' ? 'GOAT' : x.k === 'locked' ? 'Locked in' : 'Clutch'}`, at: x.at, go: 'me' });
+  for (const c of D.comments) if (mine.has(c.post) && c.by !== u.id) out.push({ by: c.by, k: 'tag', who: name(c.by), t: `commented: “${c.t.slice(0, 60)}”`, at: c.at, go: 'locker' });
+  for (const f of D.follows) if (f.to === u.id) out.push({ by: f.by, k: 'coach', who: name(f.by), t: 'started following you', at: f.at, go: 'me' });
+  const camps = new Set(D.campaigns.filter(c => c.brand === u.id).map(c => c.id));
+  for (const a of D.apps) if (camps.has(a.camp)) out.push({ by: a.by, k: 'camp', who: name(a.by), t: 'applied to your campaign', at: a.at, go: 'nil' });
+  return out.filter(n => !hidden(u, n.by)).sort((a, b) => b.at - a.at).slice(0, 30).map(n => ({ ...n, hot: n.at > (u.notesRead || 0) }));
+}
+
 function sync(viewer) {
   const visible = D.posts.filter(p => !reported('post', p.id) && !hidden(viewer, p.by));
   return {
@@ -82,6 +96,7 @@ function sync(viewer) {
       applicants: viewer && c.brand === viewer.id ? D.apps.filter(a => a.camp === c.id).map(a => pub(userById(a.by))).filter(Boolean) : undefined,
       taken: D.apps.filter(a => a.camp === c.id && a.status === 'Accepted').length, count: D.apps.filter(a => a.camp === c.id).length })),
     following: viewer ? D.follows.filter(f => f.by === viewer.id).map(f => f.to) : [],
+    notes: viewer ? notesFor(viewer) : [],
     rules: { BANNED, CATS, DELIVERABLES }
   };
 }
@@ -190,7 +205,7 @@ const routes = {
     const cur = D.props.find(x => x.post === id && x.by === ctx.user.id);
     if (cur && (cur.k === k || !PROPS.includes(k))) D.props.splice(D.props.indexOf(cur), 1);
     else if (cur) cur.k = k;
-    else if (PROPS.includes(k)) D.props.push({ post: id, by: ctx.user.id, k });
+    else if (PROPS.includes(k)) D.props.push({ post: id, by: ctx.user.id, k, at: Date.now() });
     db.touch('props');
     return { ok: true };
   } },
@@ -211,6 +226,7 @@ const routes = {
     db.touch('follows'); return { following: i < 0 };
   } },
 
+  'POST /api/notes/read': { auth: true, fn: async (b, ctx) => { ctx.user.notesRead = Date.now(); db.touch('users'); return { ok: true }; } },
   'POST /api/dm': { auth: true, fn: async (b, ctx) => {
     const t = str(b.t, 1000);
     if (!t && !b.post) throw err(400, 'Write a message first.');
