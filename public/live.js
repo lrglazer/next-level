@@ -118,6 +118,11 @@
       document.head.appendChild(st);
     }
     const me = data && data.me;
+    let tag = document.getElementById('sampleTag');
+    if (!tag) { tag = document.createElement('span'); tag.id = 'sampleTag'; tag.className = 'chip'; tag.style.cssText = 'font-size:11px;white-space:nowrap;opacity:.8';
+      tag.title = 'Sample athletes, scores and posts are mixed in so the app isn’t empty. Real posts always show first.'; b.parentNode.insertBefore(tag, b.nextSibling); }
+    const real = data ? data.posts.length : 0;
+    tag.textContent = real >= 30 ? '' : 'Preview · sample athletes shown'; tag.hidden = real >= 30;
     b.innerHTML = me ? `<span class="av2">${esc((me.f[0] || '') + (me.l[0] || ''))}</span>${esc(me.role === 'brand' && me.brand ? me.brand.name : me.f)}` : 'Sign in';
   }
   function sheet(html) {
