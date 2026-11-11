@@ -1,0 +1,18 @@
+# Render setup: on render.com choose New > Blueprint and point it at this repo.
+services:
+  - type: web
+    name: next-level
+    runtime: node
+    plan: starter # paid plan: needed for the disk below so posts, photos and accounts survive restarts
+    buildCommand: echo "nothing to build"
+    startCommand: node server.js
+    healthCheckPath: /api/status
+    disk:
+      name: nl-data
+      mountPath: /var/data
+      sizeGB: 5
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: NODE_VERSION
+        value: "22"

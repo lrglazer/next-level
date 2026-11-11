@@ -1,0 +1,9 @@
+{
+  "name": "next-level",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Next Level: recruiting, college athlete posts, and compliant NIL deals.",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "test": "node test.js" },
+  "engines": { "node": ">=20" }
+}
