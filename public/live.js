@@ -6,7 +6,7 @@
   const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const put = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
   const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  let token = get(KEY), data = null, base = null, timer = null;
+  let token = get(KEY), data = null, base = null, timer = null; const drafts = {};
 
   async function call(path, body) {
     const r = await fetch(API + path, {
@@ -76,11 +76,18 @@
           unread: t.unread, request: t.request,
           log: t.log.map(m => ({ by: m.by, t: m.t ? esc(m.t) : '', at: ago(m.at), offer: m.offer ? { status: m.offer.status, amt: m.offer.amt, what: esc(m.offer.what), due: m.offer.due, brand: esc(m.offer.brand) } : null, post: m.post || null })) });
       }
+      for (const [uid, dr] of Object.entries(drafts)) { if (d.threads.some(t => t.with && t.with.id === +uid)) delete drafts[uid]; else n.DM.unshift(dr); }
       n.DM.push({ id: 'welcome', kind: 'Team', name: 'Next Level', sub: 'Tips and updates', group: false, unread: 0, log: [
         { by: 'them', t: me.role === 'brand' ? 'Welcome! Head to NIL to find athletes, post a campaign, or send an offer. Every offer is checked for compliance before it’s sent.' : me.role === 'athlete' ? 'Welcome to the Locker! Post your first highlight from your Card, and set your rate card under NIL so brands can find you.' : 'Welcome! Follow athletes and give props on their highlights.', at: ago(me.created || Date.now()) }] });
       for (const o of d.offers) if (o.to === me.id && o.status !== 'Declined')
         n.OFFERS.push({ id: o.id, brand: esc(o.brand), cat: o.cat, to: o.to, amt: o.amt, what: esc(o.what), due: o.due, status: o.status, done: o.status === 'Active' ? ['Contract signed', 'School disclosure sent'] : [] });
     }
+    // notifications
+    if (!base.NOTES) base.NOTES = n.NOTES.slice();
+    n.NOTES.length = 0;
+    if (me) d.notes.forEach(x => n.NOTES.push({ k: x.k, t: '<b>' + esc(x.who) + '</b> ' + esc(x.t), at: ago(x.at), go: x.go, hot: x.hot ? 1 : 0 }));
+    else base.NOTES.forEach(x => n.NOTES.push(x));
+    try { n.renderBell(); } catch (e) {}
     renderAcct();
   }
 
@@ -221,15 +228,33 @@
     async post(p) { needAcct('athlete'); const r = await call('/api/posts', p); await sync(); return r; },
     async prop(id, k) { if (!data || !data.me) return; try { await call('/api/props', { post: +id, k: k || '' }); } catch (e) { NL().toast(e.message); } },
     async comment(id, t) { needAcct('fan'); await call('/api/comments', { post: id, t }); await sync(); },
-    async dm(cur, t) { await call('/api/dm', { to: cur.uid, t }); await sync(); NL().state.dm = cur.id; },
+    async dm(cur, t) { const r = await call('/api/dm', { to: cur.uid, t }); delete drafts[cur.uid]; await sync(); NL().state.dm = 's' + r.thread.id; },
     async read(cur) { try { await call('/api/dm/read', { id: cur.tid }); } catch (e) {} },
     async request(cur, accept) { await call('/api/dm/request', { id: cur.tid, accept }); await sync(); },
     async offer(a, o) { needAcct('brand'); await call('/api/offers', { to: a.id, ...o }); await sync(); },
     async respond(id, accept) { await call('/api/offers/respond', { id, accept }); await sync(); },
     async apply(id) { needAcct('athlete'); await call('/api/campaigns/apply', { id }); await sync(); NL().toast('Applied. The brand will see your card.'); },
     async campaign(c) { needAcct('brand'); await call('/api/campaigns', c); await sync(); NL().toast('Campaign posted'); },
+    follows(id) { return !!(data && data.following.includes(id)); },
+    async follow(id) { needAcct('fan'); await call('/api/follow', { to: id }); await sync(); },
+    async notesRead() { if (data && data.me) try { await call('/api/notes/read', {}); } catch (e) {} },
+    reportUser(a, done) {
+      needAcct('fan');
+      const d = sheet(`<div class="hd"><h2>Report or block ${esc(a.f)}</h2><button class="btn sm" data-close>Close</button></div><form class="bd stack" id="rf" style="gap:12px">
+        <label class="fl">What’s wrong?<select name="why"><option>Spam or scam</option><option>Harassment or bullying</option><option>Fake account or impersonation</option><option>Inappropriate content</option><option>Asked for pay-for-play or a recruiting deal</option><option>Something else</option></select></label>
+        <label class="chk"><input type="checkbox" name="block" checked> Also block them (they can’t message you or see your posts)</label>
+        <button class="btn pri">Send report</button></form>`);
+      d.querySelector('#rf').onsubmit = async e => {
+        e.preventDefault();
+        try { await call('/api/report', { kind: 'user', id: a.id, why: e.target.why.value }); if (e.target.block.checked) await call('/api/block', { id: a.id });
+          close(); await sync(true); NL().toast('Thanks. Our team will review it.'); if (done) done(); }
+        catch (er) { NL().toast(er.message); }
+      };
+    },
     async message(uid) { needAcct('fan'); const n = NL(), t = n.DM.find(x => x.uid === uid); if (t) { n.state.dm = t.id; n.go('messages'); return; }
-      const r = await call('/api/dm', { to: uid, t: 'Hey! 👋' }); await sync(); n.state.dm = 's' + r.thread.id; n.go('messages'); },
+      const u = data.users.find(x => x.id === uid); if (!u) throw new Error('That account doesn’t exist.');
+      drafts[uid] = { id: 'new' + uid, uid, live: true, kind: KIND[u.role] || 'Athlete', name: nameOf(u), sub: [u.sp, u.sch].filter(Boolean).join(' · ') || 'Next Level', verified: u.verified, unread: 0, log: [] };
+      apply(data); n.state.dm = 'new' + uid; n.go('messages'); },
     sync
   };
 

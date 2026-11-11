@@ -804,7 +804,7 @@ function messages(){
    <aside class="dml"><div class="dmhd"><h1>Messages</h1><button class="btn sm pri" aria-label="New message">${ic('msg',13)} New</button></div>
     <input class="dmsearch" id="dmq" placeholder="Search messages" value="${state.dmq||''}">
     <div class="dmf">${DMF.map(x=>`<button data-dmf="${x}" aria-pressed="${x===f}">${x}${x==='Requests'?' <span class="num">1</span>':''}</button>`).join('')}</div>
-    <div class="dmlist">${list.map(d=>{const l=d.log[d.log.length-1];return `<button data-dm="${d.id}" aria-current="${d.id===cur.id}">${dmAv(d)}<span class="dmt"><b>${d.name}${d.verified?` <span class="vchk">${ic('chk',9)}</span>`:''}</b><small>${l.by!=='them'&&l.by!=='me'&&d.group?l.by.split(' ')[0]+': ':l.by==='me'?'You: ':''}${l.t||(l.offer?'Sent an NIL offer':l.invite?'Sent an invite':'Shared a post')}</small></span><span class="dmmeta"><time>${l.at.replace(/^Today /,'')}</time>${d.unread?`<i>${d.unread}</i>`:''}</span></button>`}).join('')||'<div class="empty"><p>No conversations here yet.</p></div>'}</div></aside>
+    <div class="dmlist">${list.map(d=>{const l=d.log[d.log.length-1]||{by:'',t:'Start the conversation',at:''};return `<button data-dm="${d.id}" aria-current="${d.id===cur.id}">${dmAv(d)}<span class="dmt"><b>${d.name}${d.verified?` <span class="vchk">${ic('chk',9)}</span>`:''}</b><small>${l.by!=='them'&&l.by!=='me'&&d.group?l.by.split(' ')[0]+': ':l.by==='me'?'You: ':''}${l.t||(l.offer?'Sent an NIL offer':l.invite?'Sent an invite':'Shared a post')}</small></span><span class="dmmeta"><time>${l.at.replace(/^Today /,'')}</time>${d.unread?`<i>${d.unread}</i>`:''}</span></button>`}).join('')||'<div class="empty"><p>No conversations here yet.</p></div>'}</div></aside>
    <section class="dmc"><header class="dmch">${dmAv(cur)}<div style="min-width:0"><b>${cur.name}</b><small>${cur.sub}</small></div>
      <span class="dmlog" title="Messages with coaches and brands are logged for your compliance office">${ic('shield',12)} Logged</span></header>
     ${cur.request?`<div class="dmreq">${ic('shield',13)}<span><b>${cur.name}</b> isn’t in your contacts. Next Level checked them: verified local business, allowed category.</span><div class="dmca"><button class="btn sm" id="rqd">Delete</button><button class="btn sm pri" id="rqa">Accept</button></div></div>`:''}
@@ -814,7 +814,7 @@ function messages(){
   document.querySelectorAll('[data-dmf]').forEach(b=>b.onclick=()=>{state.dmf=b.dataset.dmf;state.dm=null;messages()});
   document.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{state.dm=b.dataset.dm;messages()});
   $('#dmq').oninput=e=>{state.dmq=e.target.value;messages();const i=$('#dmq');i.focus();i.setSelectionRange(i.value.length,i.value.length)};
-  $('#dmcf').onsubmit=e=>{e.preventDefault();const v=$('#dmi').value.trim();if(!v)return;if(cur.live){NLAPI.dm(cur,v).then(()=>{state.dm=cur.id;messages()}).catch(er=>toast(er.message));return}cur.log.push({by:'me',t:v.replace(/</g,'&lt;'),at:'Just now'});cur.request=false;messages()};
+  $('#dmcf').onsubmit=e=>{e.preventDefault();const v=$('#dmi').value.trim();if(!v)return;if(cur.live){NLAPI.dm(cur,v).then(()=>messages()).catch(er=>toast(er.message));return}cur.log.push({by:'me',t:v.replace(/</g,'&lt;'),at:'Just now'});cur.request=false;messages()};
   if($('#rqa'))$('#rqa').onclick=()=>{if(cur.live){NLAPI.request(cur,true).then(messages);return}cur.request=false;cur.kind='Brand';messages()};
   if($('#rqd'))$('#rqd').onclick=()=>{if(cur.live){NLAPI.request(cur,false).then(()=>{state.dm=null;messages()});return}DM.splice(DM.indexOf(cur),1);state.dm=null;messages()};
   const lg=$('#dmlog');lg.scrollTop=lg.scrollHeight; wireLocker();
@@ -1243,9 +1243,9 @@ const NOTES=[
 ];
 function renderBell(){
   const n=NOTES.filter(x=>x.hot).length;$('#bellN').textContent=n;$('#bellN').hidden=!n;
-  $('#npanel').innerHTML=`<div class="nph"><b>Notifications</b><button class="btn sm" id="nread">Mark all read</button></div>${NOTES.map((x,i)=>`<button class="nrow ${x.hot?'hot':''}" data-note="${i}"><span class="nic n-${x.k}">${ic({offer:'money',props:'trophy',camp:'chk',tag:'build',coach:'msg',game:'cal'}[x.k],15)}</span><span class="ntx">${x.t}<small>${x.at}</small></span></button>`).join('')}`;
-  $('#nread').onclick=e=>{e.stopPropagation();NOTES.forEach(x=>x.hot=0);renderBell()};
-  document.querySelectorAll('[data-note]').forEach(b=>b.onclick=()=>{const x=NOTES[+b.dataset.note];x.hot=0;$('#npanel').hidden=true;renderBell();go(x.go)});
+  $('#npanel').innerHTML=`<div class="nph"><b>Notifications</b><button class="btn sm" id="nread">Mark all read</button></div>${NOTES.length?'':'<p class="note" style="padding:12px 14px;margin:0">Nothing yet. Offers, props, comments and new fans show up here.</p>'}${NOTES.map((x,i)=>`<button class="nrow ${x.hot?'hot':''}" data-note="${i}"><span class="nic n-${x.k}">${ic({offer:'money',props:'trophy',camp:'chk',tag:'build',coach:'msg',game:'cal'}[x.k],15)}</span><span class="ntx">${x.t}<small>${x.at}</small></span></button>`).join('')}`;
+  $('#nread').onclick=e=>{e.stopPropagation();NOTES.forEach(x=>x.hot=0);renderBell();window.NLAPI&&NLAPI.notesRead()};
+  document.querySelectorAll('[data-note]').forEach(b=>b.onclick=()=>{const x=NOTES[+b.dataset.note];x.hot=0;if(window.NLAPI&&NLAPI.on&&!NOTES.some(y=>y.hot))NLAPI.notesRead();$('#npanel').hidden=true;renderBell();go(x.go)});
 }
 document.addEventListener('click',e=>{const p=$('#npanel');if(!p)return;if(e.target.closest('#bell')){p.hidden=!p.hidden;return}if(!e.target.closest('#npanel'))p.hidden=true});
 
@@ -1273,9 +1273,10 @@ function athSheet(id){
   const c={...a,num:a.num||String((id*7)%30+1),season:a.season||[['Followers',kfmt(a.fol)],['Engagement',a.eng+'%'],['Deals',String(a.deals)],['Class',a.yr]]};
   const box=$('#pv')||document.body.appendChild(Object.assign(document.createElement('div'),{id:'pv'}));
   box.innerHTML=`<div class="scrim" role="dialog" aria-modal="true" aria-label="${nm(a)}"><div class="panel dlg wide"><div class="hd"><span class="lab">Athlete card</span><button class="btn sm" id="asx">Close</button></div><div class="bd stack">${card(c)}
-   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="asf">${(state.follow||[]).includes('a'+id)?ic('chk',13)+' Following':'Follow'}</button><button class="btn" data-v="messages">Message</button></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="asf">${(a.live?window.NLAPI.follows(id):(state.follow||[]).includes('a'+id))?ic('chk',13)+' Following':'Follow'}</button><button class="btn" ${a.live?'id="asm"':'data-v="messages"'}>Message</button>${a.live?'<button class="btn" id="asr">Report or block</button>':''}</div>
    ${posts.length?`<div class="sgrid">${posts.map(p=>tile(p)).join('')}</div>`:'<div class="empty"><p>No posts yet.</p></div>'}</div></div></div>`;
   $('#asx').onclick=()=>box.innerHTML='';
+  if(a.live){$('#asf').onclick=()=>NLAPI.follow(id).then(()=>athSheet(id)).catch(e=>toast(e.message));$('#asm').onclick=()=>{box.innerHTML='';NLAPI.message(id).catch(e=>toast(e.message))};$('#asr').onclick=()=>NLAPI.reportUser(a,()=>{box.innerHTML=''});return}
   $('#asf').onclick=()=>{const f=state.follow||[];state.follow=f.includes('a'+id)?f.filter(x=>x!=='a'+id):[...f,'a'+id];athSheet(id)};
 }
 document.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.contains('scrim')){const c=e.target.parentElement;if(c){const csx=c.querySelector('#csx');csx?csx.click():c.innerHTML=''}return}});
@@ -1363,7 +1364,7 @@ function setDir(d){document.documentElement.dataset.dir=d;document.querySelector
 document.querySelectorAll('.dirsw button').forEach(b=>b.onclick=()=>setDir(b.dataset.d));
 setDir('A');
 renderNav();render();
-window.NL={A,CA,ME,LP,PH,DM,CAMPS,OFFERS,RC,BANNED,CATS,TC,state,render,renderNav,go,toast,who,nm};window.dispatchEvent(new Event('nl:ready'));
+window.NL={NOTES,renderBell,A,CA,ME,LP,PH,DM,CAMPS,OFFERS,RC,BANNED,CATS,TC,state,render,renderNav,go,toast,who,nm};window.dispatchEvent(new Event('nl:ready'));
 })();
 </script>
 
