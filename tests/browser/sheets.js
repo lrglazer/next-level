@@ -29,7 +29,7 @@ const [base, out, W] = process.argv.slice(2); let n = 0; fs.mkdirSync(out, { rec
   await api(b, '/api/campaigns', { title: 'Sheet test campaign', del: '1 story', spots: 2, pay: '$100' });
   await a.reload(); await a.waitForSelector('#main');
   await a.goto(base + '/#/home'); await a.click('.ph [data-act=compose]'); await check(a, 'new-post');
-  await a.click('.post [data-act=postmenu]'); await a.click('.pop button.mi:has-text("Edit caption")'); await check(a, 'edit-post');
+  await a.click(`.post:has(a.who[href="#/u/${aid}"]) [data-act=postmenu]`); await a.click('.pop button.mi:has-text("Edit caption")'); await check(a, 'edit-post');
   await a.goto(base + '/#/u/' + aid); await a.click('[data-act=storycard]'); await check(a, 'story-card');
   await a.goto(base + '/#/deals'); await a.click('[data-act=tab][data-v=active]'); await a.click('[data-act=deliver]'); await check(a, 'deliver');
   await a.click('[data-act=disclose]'); await check(a, 'disclose');
@@ -39,6 +39,7 @@ const [base, out, W] = process.argv.slice(2); let n = 0; fs.mkdirSync(out, { rec
   await b.goto(base + '/#/u/' + aid); await b.click('[data-act=offer]'); await b.fill('[data-form=offer] [name=amt]', '400'); await b.waitForTimeout(800); await check(b, 'offer');
   await b.goto(base + '/#/campaigns'); await b.click('.ph [data-act=newcamp]'); await check(b, 'campaign-new');
   await b.click('a.card.deal'); await b.click('[data-act=editcamp]'); await check(b, 'campaign-edit');
+  await c.goto(base + '/#/news'); await c.click('.ph [data-act=composenews]'); await check(c, 'post-news');
   await c.goto(base + '/#/u/' + aid); await c.click('[data-act=boardadd]'); await check(c, 'board-note');
   await c.click('[data-act=profmenu]'); await c.click('.pop button.mi:has-text("Report")'); await check(c, 'report');
   await o.goto(base + '/#/admin'); await o.click('[data-act=tab][data-v=accounts]'); await o.fill('#acctq', 'coach@'); await o.waitForTimeout(200); await o.click('#acctlist [data-act=acctmenu]'); await o.click('.pop button.mi:has-text("temporary")'); await check(o, 'temp-password-confirm');

@@ -1,6 +1,6 @@
 const { chromium } = require('/opt/npm-tools/node_modules/playwright'); const fs = require('fs');
 const [base, out, W] = process.argv.slice(2); fs.mkdirSync(out, { recursive: true });
-const roles = [['maya@e2e.dev', 'a', ['home', 'athletes', 'deals', 'messages', 'notifications', 'settings', 'edit', 'u/ME']], ['brand@e2e.dev', 'b', ['home', 'athletes', 'campaigns', 'deals', 'messages']], ['coach@e2e.dev', 'c', ['home', 'athletes', 'board', 'messages']], ['owner@e2e.dev', 'o', ['admin']]];
+const roles = [['maya@e2e.dev', 'a', ['home', 'athletes', 'news', 'deals', 'messages', 'notifications', 'settings', 'edit', 'u/ME']], ['brand@e2e.dev', 'b', ['home', 'athletes', 'campaigns', 'deals', 'messages']], ['coach@e2e.dev', 'c', ['home', 'athletes', 'board', 'messages']], ['owner@e2e.dev', 'o', ['admin']]];
 (async () => {
   const br = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] }); const errs = []; let n = 0;
   for (const [email, tag, routes] of roles) {

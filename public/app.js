@@ -287,7 +287,7 @@ function navItems() {
   if (r === 'athlete') return [{ href: 'home', label: 'Home', icon: 'home' }, { href: 'athletes', label: 'Explore', icon: 'compass' }, { href: 'deals', label: 'Deals', icon: 'dollar', badge: pendingOffers() }, m, prof];
   if (r === 'coach') return [{ href: 'home', label: 'Home', icon: 'home' }, { href: 'athletes', label: 'Search', icon: 'search' }, { href: 'board', label: 'Board', icon: 'board' }, m, prof];
   if (r === 'brand') return [{ href: 'home', label: 'Dashboard', icon: 'chart' }, { href: 'athletes', label: 'Find athletes', short: 'Find', icon: 'search' }, { href: 'campaigns', label: 'Campaigns', icon: 'brief', badge: newApplicants() }, { href: 'deals', label: 'Deals', icon: 'dollar', badge: toReview() }, m];
-  return [{ href: 'home', label: 'Home', icon: 'home' }, { href: 'athletes', label: 'Athletes', icon: 'compass' }, m, prof];
+  return [{ href: 'home', label: 'Home', icon: 'home' }, { href: 'athletes', label: 'Athletes', icon: 'compass' }, { href: 'news', label: 'News', icon: 'flag' }, m, prof];
 }
 function isOn(href) {
   const r = route(), cur = r[0] || 'home';
@@ -319,11 +319,13 @@ function render() {
     </header>`;
   const side = me ? `<nav class="side" aria-label="Main">
       ${nav.map(n => `<a class="nav${isOn(n.href) ? ' on' : ''}" href="#/${n.href}">${ic(n.icon)}${esc(n.label)}${n.badge ? `<span class="badge">${n.badge}</span>` : ''}</a>`).join('')}
+      <a class="nav${isOn('news') ? ' on' : ''}" href="#/news">${ic('flag')}News</a>
       <a class="nav${isOn('notifications') ? ' on' : ''}" href="#/notifications">${ic('bell')}Notifications${hotNotes() ? `<span class="badge">${hotNotes()}</span>` : ''}</a>
       ${me.admin ? `<div class="grp eyebrow">Owner</div><a class="nav${isOn('admin') ? ' on' : ''}" href="#/admin">${ic('shield')}Admin${D().admin && D().admin.pending.length + D().admin.reports.length ? `<span class="badge">${D().admin.pending.length + D().admin.reports.length}</span>` : ''}</a>` : ''}
       <div class="foot"><span>Next Level is a marketplace, not an agent.</span><span><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:${SUPPORT}">Help</a></span></div>
     </nav>` : `<nav class="side" aria-label="Main">
       <a class="nav${isOn('athletes') ? ' on' : ''}" href="#/athletes">${ic('compass')}Athletes</a>
+      <a class="nav${isOn('news') ? ' on' : ''}" href="#/news">${ic('flag')}News</a>
       <div class="foot"><span>Join free to follow athletes, message and make deals.</span><button class="btn pri sm" data-act="join">Join free</button><span><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></span></div></nav>`;
   const tabbar = me ? `<nav class="tabbar" aria-label="Main">${nav.map(n => `<a class="${isOn(n.href) ? 'on' : ''}" href="#/${n.href}">${ic(n.icon)}${esc(n.short || n.label)}${n.badge ? `<span class="badge">${n.badge}</span>` : ''}</a>`).join('')}</nav>` : '';
   app.innerHTML = `${top}<div class="shell">${side}<main class="main" id="main">${S.cmp.length && route()[0] !== 'compare' ? `<div class="cmptray"><span>${plural(S.cmp.length, 'athlete')} to compare</span><a class="btn pri sm" href="#/compare">Compare</a><button class="btn ghost sm" data-act="cmpclear">Clear</button></div>` : ''}${me && me.tempPw && route()[0] !== 'settings' ? `<div class="note warn" style="max-width:1080px;margin:0 auto 16px">${ic('alert')}<span><b>You’re using a temporary password.</b> <a href="#/settings">Choose a new one</a> to keep your account secure.</span></div>` : ''}${view.html}</main></div>${tabbar}`;
@@ -344,6 +346,7 @@ function viewFor(r) {
     if (a === 'campaigns') return me.role === 'brand' ? (b ? campaign(b) : campaigns()) : notFound();
     if (a === 'board') return me.role === 'coach' ? board() : notFound();
     if (a === 'compare') return compare();
+    if (a === 'news') return newsPage();
     if (a === 'school' && b) return school(decodeURIComponent(b));
     if (a === 'notifications') return notifications();
     if (a === 'settings') return settings();
@@ -359,7 +362,7 @@ function landing() {
   const li = t => `<li>${ic('check')}<span>${t}</span></li>`;
   return `<div class="land">
   <header class="top"><a class="logo" href="#/">${LOGO}<b>Next Level</b></a>
-    <div class="acts"><a class="btn ghost sm hide-sm" href="#/athletes">Browse athletes</a><button class="btn ghost sm" data-act="signin">Log in</button><button class="btn pri sm" data-act="join">Join free</button></div></header>
+    <div class="acts"><a class="btn ghost sm hide-sm" href="#/news">News</a><a class="btn ghost sm hide-sm" href="#/athletes">Browse athletes</a><button class="btn ghost sm" data-act="signin">Log in</button><button class="btn pri sm" data-act="join">Join free</button></div></header>
   <section class="hero">${field('Volleyball', 'herofield', 'xMaxYMid meet')}<div class="in2 herogrid"><div>
     <h1>Get recruited.<br>Get paid.<br>Do it right.</h1>
     <p>Next Level is where college athletes build a stat card coaches trust, and land NIL deals with compliance checks built into every offer.</p>
@@ -465,6 +468,7 @@ function postCard(p) {
     <div class="ph2">${who(u, { sub: [subline(u), u && u.sch].filter(Boolean).join(' · ') })}
       <div class="row"><span class="tiny dim" title="${esc(new Date(p.at).toLocaleString())}">${ago(p.at)}${p.edited ? ' · edited' : ''}</span><button class="btn ghost sm icon" data-act="postmenu" data-id="${p.id}" aria-label="Post options">${ic('more')}</button></div></div>
     ${p.img ? `<button class="media" data-act="zoom" data-src="${esc(p.img)}" aria-label="View photo full size"><img src="${esc(p.img)}" alt="${esc(p.type + ' photo from ' + nameOf(u))}" loading="lazy"></button>` : ''}
+    ${p.news ? newsBlock(p, u) : ''}
     <div class="bd">
       <div class="kicker"><span class="tag ${p.type === 'NIL partner' ? 'yellow' : p.type === 'Game day' ? 'red' : 'blue'}">${esc(p.type)}</span>${p.tag ? `<span class="tag">${esc(p.tag)}</span>` : ''}${p.season ? `<span class="tag">${esc(p.season)}</span>` : ''}</div>
       ${p.cap && p.cap !== '—' ? `<div class="cap">${linkify(p.cap)}</div>` : ''}
@@ -481,18 +485,45 @@ function editPost(p) {
     <label class="field"><span>Caption</span><textarea class="in" name="cap" maxlength="600" rows="5">${esc(p.cap === '—' ? '' : p.cap)}</textarea></label><p class="err" hidden></p></form>`,
     `<button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="sendedit">Save</button>`);
 }
-function composer() {
-  const s = sheet('New post', `<form class="stack" data-form="post" novalidate>
+// Broadcast-style headline for commitments, signings, transfers, results, awards and program news.
+function newsBlock(p, u) {
+  const n = p.news, sp = esc(p.sport || '');
+  if (p.type === 'Result') {
+    const win = n.us > n.them, tie = n.us === n.them;
+    return `<div class="nb nb-score">${field(p.sport, 'mini')}<div class="nb-top"><span class="tag ${tie ? '' : win ? 'green' : 'red'}">${tie ? 'Final · Tie' : win ? 'Final · Win' : 'Final · Loss'}</span><span class="small dim">${[sp, esc(n.event)].filter(Boolean).join(' · ')}</span></div>
+      <div class="sb"><div class="sbr${win ? ' w' : ''}"><span>${esc(n.team || 'Us')}</span><b>${n.us}</b></div><div class="sbr${!win && !tie ? ' w' : ''}"><span>${esc(n.opp)}</span><b>${n.them}</b></div></div></div>`;
+  }
+  const big = { Commitment: 'Committed', Signing: 'Signed', Transfer: 'Transferring', Award: 'Award', 'Program news': esc(u && u.sch || 'Program') }[p.type];
+  const line = p.type === 'Award' ? esc(n.award) : p.type === 'Program news' ? esc(n.headline) : p.type === 'Transfer' ? `${n.from ? esc(n.from) + ' <span class="arrow">→</span> ' : ''}${esc(n.school)}` : esc(n.school);
+  return `<div class="nb nb-${p.type === 'Program news' ? 'prog' : p.type.toLowerCase()}">${field(p.sport, 'mini')}<div class="nb-k">${big}</div><div class="nb-h">${line}</div>${u && u.role === 'athlete' && p.type !== 'Award' ? `<div class="small muted">${esc(nameOf(u))}${[u.sp, u.pos].filter(Boolean).length ? ' · ' + esc([u.sp, u.pos].filter(Boolean).join(' · ')) : ''}</div>` : ''}</div>`;
+}
+function composer(preType) {
+  const me = ME(), types = me.role === 'coach' ? D().rules.COACH_TYPES : D().rules.TYPES;
+  const s = sheet(me.role === 'coach' ? 'Post news' : 'New post', `<form class="stack" data-form="post" novalidate>
     <input type="file" accept="image/jpeg,image/png,image/webp" id="pfile" hidden>
     <div id="pdrop"><label class="drop" for="pfile">${ic('image')}<span><b style="color:var(--t);font-weight:500">Add a photo</b><br><span class="small">JPG, PNG or WebP. Optional for text posts.</span></span></label></div>
-    <div class="grid2"><label class="field"><span>Type</span><select class="in" name="type">${D().rules.TYPES.map(t => `<option>${esc(t)}</option>`).join('')}</select></label>
+    <div class="grid2"><label class="field"><span>Type</span><select class="in" name="type">${types.map(t => `<option ${t === preType ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
       <label class="field"><span>Season</span><input class="in" name="season" maxlength="20" value="${new Date().getFullYear()} season"></label></div>
+    <div class="stack" data-news="Commitment Signing Transfer" hidden>
+      <label class="field" data-news="Transfer" hidden><span>Transferring from</span><input class="in" name="n_from" maxlength="60" value="${esc(me.sch)}"></label>
+      <label class="field"><span data-schoollabel>School</span><input class="in" name="n_school" maxlength="60" placeholder="e.g. Baylor University"></label></div>
+    <label class="field" data-news="Award" hidden><span>Award</span><input class="in" name="n_award" maxlength="80" placeholder="e.g. All-Big 12 First Team"></label>
+    <label class="field" data-news="Program news" hidden><span>Headline</span><input class="in" name="n_headline" maxlength="90" placeholder="e.g. Spring schedule released"></label>
+    <div class="stack" data-news="Result" hidden>
+      <div class="grid2"><label class="field"><span>Your team</span><input class="in" name="n_team" maxlength="60" value="${esc(me.sch)}"></label><label class="field"><span>Opponent</span><input class="in" name="n_opp" maxlength="60" placeholder="e.g. TCU"></label></div>
+      <div class="grid3"><label class="field"><span>Your score</span><input class="in" name="n_us" inputmode="numeric" maxlength="3"></label><label class="field"><span>Their score</span><input class="in" name="n_them" inputmode="numeric" maxlength="3"></label><label class="field"><span>Event <small>(optional)</small></span><input class="in" name="n_event" maxlength="60" placeholder="Conference"></label></div></div>
+    ${me.role === 'athlete' ? `<p class="small dim" data-news="Commitment Signing Transfer" hidden style="margin:0">Only announce once it’s official and you’re ready to share it. Coaches can’t post about recruits before they sign.</p>` : ''}
     <label class="field" data-partner hidden><span>Brand partner</span><input class="in" name="partner" maxlength="60" placeholder="Who is this partnership with?"><small>Next Level labels this post as a paid partnership, as the FTC requires.</small></label>
     <label class="field"><span>Opponent or event <small>(optional)</small></span><input class="in" name="tag" maxlength="60" placeholder="e.g. vs. Baylor · Big 12 Championships"></label>
     <label class="field"><span>Caption</span><textarea class="in" name="cap" maxlength="600" rows="4" placeholder="What happened?"></textarea></label>
     <p class="err" hidden></p></form>`, `<button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="sendpost">Post</button>`);
   const f = s.querySelector('form'), type = f.type, part = s.querySelector('[data-partner]');
-  type.onchange = () => { part.hidden = type.value !== 'NIL partner'; };
+  const sync = () => { const t = type.value; part.hidden = t !== 'NIL partner';
+    s.querySelectorAll('[data-news]').forEach(el => { el.hidden = !el.dataset.news.split(' ').includes(t) && !(el.dataset.news === 'Commitment Signing Transfer' && ['Commitment', 'Signing', 'Transfer'].includes(t)); });
+    s.querySelectorAll('[data-news="Transfer"]').forEach(el => { el.hidden = t !== 'Transfer'; });
+    const sl = s.querySelector('[data-schoollabel]'); if (sl) sl.textContent = t === 'Commitment' ? 'Committed to' : t === 'Signing' ? 'Signed with' : 'Transferring to';
+    s.querySelector('[name=tag]').closest('label').hidden = ['Result', 'Program news'].includes(t); };
+  type.onchange = sync; sync();
   s.querySelector('#pfile').onchange = async e => {
     const file = e.target.files[0]; if (!file) return;
     try { const data = await readImage(file); f._img = data; s.querySelector('#pdrop').innerHTML = `<div class="preview"><img src="${data}" alt="Selected photo"><button type="button" class="btn sm" data-clear>Remove</button></div>`;
@@ -510,13 +541,13 @@ function home() {
   const sports = [...new Set(d.posts.map(p => p.sport).filter(Boolean))].sort();
   if (S.ui.fsp) posts = posts.filter(p => p.sport === S.ui.fsp);
   const head = `<div class="ph"><div><h1 class="h1">${me ? 'Hey, ' + esc(me.f) : 'The Locker'}</h1></div>
-    ${me && me.role === 'athlete' ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : ''}</div>`;
+    ${me && me.role === 'athlete' ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : me && me.role === 'coach' ? `<button class="btn pri" data-act="composenews">${ic('plus')}Post news</button>` : ''}</div>`;
   const tabs = (me ? `<div class="tabs" role="tablist"><button role="tab" aria-selected="${tab === 'all'}" data-act="feed" data-v="all">Everyone</button><button role="tab" aria-selected="${tab === 'following'}" data-act="feed" data-v="following">Following</button></div>` : '')
     + (sports.length > 1 ? `<div class="row wrap" style="margin:-4px 0 4px">${['', ...sports].map(x => `<button class="chip" data-act="fsp" data-v="${esc(x)}" aria-pressed="${(S.ui.fsp || '') === x}">${esc(x || 'All sports')}</button>`).join('')}</div>` : '');
   const feed = posts.length ? posts.slice(0, 60).map(postCard).join('') :
     `<div class="card">${tab === 'following' ? empty('users', 'Nothing from people you follow yet', 'Follow athletes to see their highlights and game days here.', '<a class="btn" href="#/athletes">Find athletes</a>')
       : empty('image', 'No posts yet', me && me.role === 'athlete' ? 'Be the first. Share a highlight, a game day or a training session.' : 'When athletes share highlights and game days, they’ll show up here.', me && me.role === 'athlete' ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : '<a class="btn" href="#/athletes">Browse athletes</a>')}</div>`;
-  return { title: 'Home', html: `<div class="page">${head}<div class="cols"><div class="stack">${tabs}${feed}</div><aside>${homeAside()}</aside></div></div>` };
+  return { title: 'Home', html: `<div class="page">${head}<div class="cols"><div class="stack">${tabs}${feed}</div><aside>${newsStrip()}${homeAside()}</aside></div></div>` };
 }
 function profileTodo(me) {
   const posts = D().posts.filter(p => p.by === me.id).length;
@@ -693,6 +724,29 @@ function profile(id) {
     main = u.bio ? `<div class="card"><div class="card-h"><h2 class="h2">About</h2></div><div class="card-b"><p style="margin:0;white-space:pre-wrap">${esc(u.bio)}</p></div></div>` : `<div class="card">${empty('user', mine ? 'Add a bio' : 'No bio yet', mine ? 'Let athletes know who you are.' : '', mine ? '<a class="btn" href="#/edit">Edit profile</a>' : '')}</div>`;
   }
   return { title: nameOf(u), html: `<div class="page stack lg">${header}<div class="cols"><div class="stack">${main}</div><aside>${side}</aside></div></div>` };
+}
+
+// ---------------------------------------------------------------- news
+const NEWS_TABS = [['', 'All'], ['Commitment', 'Commitments'], ['Signing', 'Signings'], ['Transfer', 'Transfers'], ['Result', 'Results'], ['Award', 'Awards'], ['Program news', 'Programs']];
+function newsPage() {
+  const d = D(), me = ME(), all = d.posts.filter(p => d.rules.NEWS.includes(p.type));
+  const t = S.ui.ntype || '', sp = S.ui.nsp || '';
+  const sports = [...new Set(all.map(p => p.sport).filter(Boolean))].sort();
+  const list = all.filter(p => (!t || p.type === t) && (!sp || p.sport === sp));
+  const canPost = me && (me.role === 'athlete' || me.role === 'coach');
+  return { title: 'News', html: `<div class="page narrow">
+    <div class="ph"><div><h1 class="h1">News</h1><p>Commitments, signings, transfers, results and awards, posted by athletes and coaches on Next Level.</p></div>${canPost ? `<button class="btn pri" data-act="composenews">${ic('plus')}${me.role === 'coach' ? 'Post news' : 'Share news'}</button>` : ''}</div>
+    <div class="tabs" role="tablist">${NEWS_TABS.map(([k, l]) => `<button role="tab" aria-selected="${t === k}" data-act="ntype" data-v="${esc(k)}">${l}${k ? ` <span class="count">${all.filter(p => p.type === k).length || ''}</span>` : ''}</button>`).join('')}</div>
+    ${sports.length > 1 ? `<div class="row wrap" style="margin-bottom:12px">${['', ...sports].map(x => `<button class="chip" data-act="nsp" data-v="${esc(x)}" aria-pressed="${sp === x}">${esc(x || 'All sports')}</button>`).join('')}</div>` : ''}
+    ${list.length ? `<div class="stack">${list.slice(0, 80).map(postCard).join('')}</div>` : `<div class="card">${empty('flag', all.length ? 'Nothing here yet' : 'No news yet', canPost ? (me.role === 'coach' ? 'Post a final score or program update.' : 'Committed, signed or won an award? Share it here.') : 'Commitments, signings and results show up here as athletes and coaches post them.', canPost ? `<button class="btn pri" data-act="composenews">${ic('plus')}${me.role === 'coach' ? 'Post news' : 'Share news'}</button>` : '')}</div>`}
+  </div>` };
+}
+function newsStrip() {
+  const d = D(), items = d.posts.filter(p => d.rules.NEWS.includes(p.type)).slice(0, 4);
+  if (!items.length) return '';
+  return `<div class="card"><div class="card-h"><h2 class="h2">Latest news</h2><a class="small" href="#/news">All news</a></div><div class="list">${items.map(p => { const u = user(p.by), n = p.news || {};
+    const line = p.type === 'Result' ? `${esc(n.team || '')} ${n.us}–${n.them} ${esc(n.opp)}` : p.type === 'Award' ? esc(n.award) : p.type === 'Program news' ? esc(n.headline) : `${esc(nameOf(u))} → ${esc(n.school)}`;
+    return `<a class="nrow" href="#/p/${p.id}"><span class="tag ${p.type === 'Result' ? 'red' : p.type === 'Award' ? 'yellow' : 'blue'}">${esc(p.type === 'Program news' ? 'News' : p.type)}</span><div class="b">${line}</div><span class="tm">${ago(p.at)}</span></a>`; }).join('')}</div></div>`;
 }
 
 // ---------------------------------------------------------------- program pages: everyone at a school, grouped by sport
@@ -1178,6 +1232,9 @@ const ACT = {
   toggle: el => { S.ui.open[el.dataset.k] = !S.ui.open[el.dataset.k]; render(); },
   cmts: el => { const id = el.dataset.id; S.ui.open[id] = !S.ui.open[id]; render(); if (S.ui.open[id]) { const i = $(`#post-${id} [name=t]`); if (i) i.focus(); } },
   compose: () => composer(),
+  composenews: () => composer(ME().role === 'coach' ? 'Result' : 'Commitment'),
+  ntype: el => { S.ui.ntype = el.dataset.v; render(); },
+  nsp: el => { S.ui.nsp = el.dataset.v; render(); },
   clearf: () => { S.ui.f = { q: '', sp: '', yr: '', st: '', pos: '', vf: false, nil: false, cat: '', sort: 'best', grad: '', gpa: '', fol: '', saved: false }; render(); },
   prop: el => need(() => run(null, async () => {
     const p = D().posts.find(x => x.id === +el.dataset.id), k = el.dataset.k; if (!p) return;
@@ -1367,11 +1424,13 @@ ACT.sendreport = el => run(el, async () => {
 });
 ACT.sendpost = el => run(el, async () => {
   const f = $('[data-form=post]'), b = fd(f);
-  if (!f._img && !b.cap.trim()) return formErr(f, 'Add a photo or write a caption.');
+  const isNews = D().rules.NEWS.includes(b.type);
+  if (!isNews && !f._img && !b.cap.trim()) return formErr(f, 'Add a photo or write a caption.');
   if (b.type === 'NIL partner' && !b.partner.trim()) return formErr(f, 'Add the brand you partnered with.');
+  const news = isNews ? { school: b.n_school, from: b.n_from, award: b.n_award, headline: b.n_headline, team: b.n_team, opp: b.n_opp, us: b.n_us, them: b.n_them, event: b.n_event } : null;
   el.textContent = 'Posting…';
-  try { await api('/api/posts', { ...b, img: f._img || null }); } catch (e) { return formErr(f, e.message); }
-  closeSheet(); await refresh(); toast('Posted'); if (route()[0] !== 'home' && route()[0] !== 'u') go('home'); else render();
+  try { await api('/api/posts', { type: b.type, season: b.season, partner: b.partner, tag: b.tag, cap: b.cap, news, img: f._img || null }); } catch (e) { return formErr(f, e.message); }
+  closeSheet(); await refresh(); toast(isNews ? 'Posted to News' : 'Posted'); if (isNews && route()[0] !== 'u') go('news'); else if (route()[0] !== 'home' && route()[0] !== 'u') go('home'); else render();
 });
 
 document.addEventListener('click', e => {

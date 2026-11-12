@@ -229,6 +229,15 @@ server.listen(0, async () => {
     await call('/api/posts/pin', { id: pp.id }, A.token); await call('/api/posts/delete', { id: pp.id }, A.token);
     ok((await call('/api/sync', null, A.token)).j.me.pin === null, 'deleting pinned post clears pin');
 
+    // --- round 10: news posts
+    r = await call('/api/posts', { type: 'Commitment', news: { school: 'Baylor' } }, A.token); ok(r.s === 200 && r.j.post.news.school === 'Baylor', 'commitment post');
+    ok((await call('/api/posts', { type: 'Commitment', news: {} }, A.token)).s === 400, 'commitment needs school');
+    r = await call('/api/posts', { type: 'Result', news: { opp: 'TCU', us: '3', them: '1', event: 'Big 12' } }, C2); ok(r.s === 200 && r.j.post.news.us === 3 && r.j.post.news.team === 'SMU', 'coach posts result');
+    ok((await call('/api/posts', { type: 'Result', news: { opp: 'TCU', us: 'three', them: '1' } }, C2)).s === 400, 'scores must be numbers');
+    r = await call('/api/posts', { type: 'Commitment', news: { school: 'X' } }, C2); ok(r.s === 400 || (r.j.post && r.j.post.type !== 'Commitment'), 'coach cannot post commitments');
+    ok((await call('/api/posts', { type: 'Program news', news: { headline: 'Spring schedule released' } }, C2)).s === 200, 'program news');
+    ok((await call('/api/posts', { type: 'Result', news: { opp: 'x', us: 1, them: 2 } }, B.token)).s === 403, 'brands cannot post');
+
     // --- delete account
     ok((await call('/api/delete-account', { password: 'wrong' }, F.token)).s === 401, 'delete needs password');
     ok((await call('/api/delete-account', { password: 'password123' }, F.token)).s === 200, 'delete');

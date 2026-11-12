@@ -17,7 +17,10 @@ const D = db.data;
 const err = db.err;
 
 const ROLES = ['athlete', 'brand', 'coach', 'fan'];
-const TYPES = ['Highlight', 'Game day', 'Training log', 'Behind the scenes', 'NIL partner'];
+const TYPES = ['Highlight', 'Game day', 'Training log', 'Behind the scenes', 'NIL partner', 'Commitment', 'Signing', 'Transfer', 'Result', 'Award'];
+// News is the subset of posts with a headline: who committed or signed where, final scores, awards.
+const NEWS = ['Commitment', 'Signing', 'Transfer', 'Result', 'Award', 'Program news'];
+const ATHLETE_TYPES = TYPES, COACH_TYPES = ['Result', 'Program news', 'Award'];
 const PROPS = ['clutch', 'locked', 'goat'];
 const STAGES = ['Watching', 'Evaluating', 'Offered', 'Committed'];
 const httpsUrl = (v) => { const s = str(v, 200); return /^https:\/\/[^\s]+\.[^\s]+$/i.test(s) ? s : ''; };
@@ -57,7 +60,7 @@ function postOut(p, viewer) {
   let mine = null;
   for (const x of D.props) if (x.post === p.id) { props[x.k] += 1; if (viewer && x.by === viewer.id) mine = x.k; }
   return { id: p.id, by: p.by, type: p.type, sport: p.sport, season: p.season, tag: p.tag, pr: p.pr, partner: p.partner, cap: p.cap,
-    img: p.img ? '/media/' + p.img : null, edited: !!p.edited, props, mine, cm: D.comments.filter(c => c.post === p.id && !reported('comment', c.id)).length, at: p.at };
+    img: p.img ? '/media/' + p.img : null, news: p.news || null, edited: !!p.edited, props, mine, cm: D.comments.filter(c => c.post === p.id && !reported('comment', c.id)).length, at: p.at };
 }
 function commentsOut(viewer) {
   const out = {};
@@ -115,7 +118,7 @@ function sync(viewer) {
     board: viewer && viewer.role === 'coach' ? D.boards.filter(b => b.by === viewer.id && userById(b.athlete)).map(b => ({ athlete: b.athlete, stage: b.stage, note: b.note || '', at: b.at })) : [],
     notes: viewer ? notesFor(viewer) : [],
     admin: isAdmin(viewer) ? adminOut() : null,
-    rules: { BANNED, CATS, DELIVERABLES, TYPES, STAGES }
+    rules: { BANNED, CATS, DELIVERABLES, TYPES: ATHLETE_TYPES, COACH_TYPES, NEWS, STAGES }
   };
 }
 // The owner's moderation queue: reports, and athletes and coaches waiting to be verified.
@@ -270,13 +273,15 @@ const routes = {
 
   'POST /api/posts': { auth: true, fn: async (b, ctx) => {
     const u = ctx.user;
-    if (u.role !== 'athlete') throw err(403, 'Only college athlete accounts can post to the Locker.');
+    if (u.role !== 'athlete' && u.role !== 'coach') throw err(403, 'Only athlete and coach accounts can post.');
     limit('post:' + u.id, 6, 600e3); daily(u, 'post', 30);
-    const cap = str(b.cap, 600), type = TYPES.includes(b.type) ? b.type : 'Highlight';
-    if (!b.img && !cap) throw err(400, 'Add a photo or write a caption first.');
-    if (!clean(cap)) throw err(400, 'Keep it respectful. That caption can’t be posted.');
+    const allowed = u.role === 'coach' ? COACH_TYPES : ATHLETE_TYPES;
+    const cap = str(b.cap, 600), type = allowed.includes(b.type) ? b.type : (u.role === 'coach' ? 'Program news' : 'Highlight');
+    const news = newsFields(type, b.news || {}, u);
+    if (!b.img && !cap && !news) throw err(400, 'Add a photo or write a caption first.');
+    if (!clean(cap) || (news && !clean(Object.values(news).join(' ')))) throw err(400, 'Keep it respectful. That post can’t be shared.');
     const p = { id: db.nextId(), by: u.id, type, sport: u.sp || 'Other', season: str(b.season, 20) || new Date().getFullYear() + ' season',
-      tag: str(b.tag, 60), pr: str(b.pr, 60), partner: type === 'NIL partner' ? str(b.partner, 60) : '', cap: cap || '—', img: b.img ? db.saveMedia(b.img) : null, at: Date.now() };
+      tag: str(b.tag, 60), pr: str(b.pr, 60), partner: type === 'NIL partner' ? str(b.partner, 60) : '', cap: cap || '—', img: b.img ? db.saveMedia(b.img) : null, news, at: Date.now() };
     D.posts.push(p); db.touch('posts');
     return { post: postOut(p, u) };
   } },
@@ -519,6 +524,20 @@ const routes = {
     db.touch('posts', 'comments', 'props', 'reports'); return sync(ctx.user);
   } }
 };
+// The headline details each news type needs. Returns null for ordinary posts.
+function newsFields(type, n, u) {
+  if (!NEWS.includes(type)) return null;
+  const need = (v, msg) => { if (!v) throw err(400, msg); return v; };
+  if (type === 'Commitment') return { school: need(str(n.school, 60), 'Add the school you committed to.') };
+  if (type === 'Signing') return { school: need(str(n.school, 60), 'Add the school or team you signed with.') };
+  if (type === 'Transfer') return { from: str(n.from, 60) || u.sch || '', school: need(str(n.school, 60), 'Add the school you’re transferring to.') };
+  if (type === 'Award') return { award: need(str(n.award, 80), 'Add the award name.') };
+  if (type === 'Program news') return { headline: need(str(n.headline, 90), 'Add a headline.') };
+  // Result: our score vs. theirs, from the poster's team's side.
+  const us = String(n.us ?? '').trim(), them = String(n.them ?? '').trim();
+  if (!/^\d{1,3}$/.test(us) || !/^\d{1,3}$/.test(them)) throw err(400, 'Enter both scores as numbers.');
+  return { team: str(n.team, 60) || u.sch || '', opp: need(str(n.opp, 60), 'Add the opponent.'), us: +us, them: +them, event: str(n.event, 60) };
+}
 function offerFields(b) {
   return { cat: CATS.includes(b.cat) || BANNED.includes(b.cat) ? b.cat : 'Local business', del: num(b.del, 0, 2), amt: num(b.amt, 0, 1e6),
     perf: !!b.perf, what: str(b.what, 200) || DELIVERABLES[num(b.del, 0, 2)], due: str(b.due, 30) || 'Flexible', note: str(b.note, 400) };

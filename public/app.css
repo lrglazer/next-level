@@ -547,3 +547,22 @@ a.card.deal > .row > svg { width: 20px; height: 20px; flex: none; color: var(--t
 .crop-mask { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle closest-side, transparent calc(100% - 2px), rgba(236, 238, 241, .9) calc(100% - 2px), rgba(236, 238, 241, .9) 100%, rgba(11, 12, 14, .66) 100%); }
 .crop.sq .crop-mask { background: none; border: 2px solid rgba(236, 238, 241, .9); border-radius: 14px; }
 input[type=range] { accent-color: var(--blue); height: 28px; }
+/* news */
+.nb { position: relative; overflow: hidden; margin: 0 16px; padding: 18px; border-radius: var(--r-lg); background: linear-gradient(180deg, #11202E, var(--s2)); border: 1px solid var(--line2); display: grid; gap: 6px; }
+.nb > *:not(.fieldart) { position: relative; }
+.nb .fieldart.mini { height: 100%; opacity: .5; }
+.nb-k { font: 600 15px/1 var(--f-b); letter-spacing: .02em; color: var(--yellow); }
+.nb-commitment .nb-k, .nb-signing .nb-k { display: inline-block; justify-self: start; padding: 6px 10px 4px; border-radius: 4px; background: var(--yellow); color: #0B0C0E; font: 600 22px/1 var(--f-d); text-transform: uppercase; }
+.nb-transfer .nb-k { color: var(--blue); }
+.nb-h { font: 600 clamp(34px, 7vw, 48px)/0.92 var(--f-d); text-transform: uppercase; overflow-wrap: anywhere; }
+.nb-h .arrow { color: var(--blue); }
+.nb-award { background: linear-gradient(180deg, #2A2610, var(--s2)); }
+.nb-prog .nb-h { font-size: clamp(28px, 6vw, 38px); }
+.nb-score { gap: 12px; }
+.nb-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sb { display: grid; gap: 1px; background: var(--line2); border-radius: var(--r); overflow: hidden; }
+.sbr { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--s1); color: var(--t2); }
+.sbr span { font: 600 26px/1 var(--f-d); text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-top: 3px; }
+.sbr b { font: 600 40px/0.9 var(--f-d); min-width: 2ch; text-align: right; }
+.sbr.w { color: var(--t); } .sbr.w b { color: var(--yellow); }
+.post .nb + .bd { padding-top: 12px; }

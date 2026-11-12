@@ -84,6 +84,9 @@ let step = 0;
   await ath.fill('[data-form=post] [name=cap]', 'Senior night. Thank you all.'); await shot(ath, 'composer');
   await ath.click('[data-act=sendpost]'); await ath.waitForFunction(() => !document.querySelector('.scrim'));
   await ath.goto(base + '/#/home'); await ath.waitForSelector('.post'); await shot(ath, 'athlete-home');
+  await ath.goto(base + '/#/news'); await ath.click('.ph [data-act=composenews]'); await ath.waitForSelector('[data-form=post] [name=n_school]');
+  await ath.fill('[data-form=post] [name=n_school]', 'Baylor University'); await ath.fill('[data-form=post] [name=cap]', 'Blessed to announce my commitment. Sic ’em!');
+  await ath.click('[data-act=sendpost]'); await ath.waitForSelector('.nb-commitment'); await ath.goto(base + '/#/home');
   await ath.click('.post [data-act=postmenu]'); await ath.click('.pop button.mi:has-text("Pin to profile")'); await ath.waitForFunction(() => /Pinned/.test([...document.querySelectorAll('.toast')].map(t => t.textContent).join()));
   const myHref = await ath.evaluate(() => document.querySelector('.tabbar a:last-child, .side a[href^="#/u/"]').getAttribute('href'));
   await ath.goto(base + '/' + myHref); await ath.waitForSelector('.sec-h:has-text("Pinned") + .post');
@@ -164,6 +167,9 @@ let step = 0;
   await co.click('.acard'); await co.waitForSelector('[data-act=boardadd]'); await co.click('[data-act=boardadd]');
   await co.fill('[data-form=board] [name=note]', 'Big arm. Watch vs. Baylor film.'); await co.click('[data-act=boardsave]');
   await co.waitForFunction(() => !document.querySelector('.scrim'));
+  await co.goto(base + '/#/news'); await co.click('.ph [data-act=composenews]'); await co.waitForSelector('[data-form=post] [name=n_opp]');
+  await co.fill('[data-form=post] [name=n_opp]', 'TCU'); await co.fill('[data-form=post] [name=n_us]', '3'); await co.fill('[data-form=post] [name=n_them]', '1'); await co.fill('[data-form=post] [name=n_event]', 'Big 12');
+  await co.click('[data-act=sendpost]'); await co.waitForSelector('.nb-score'); 
   await co.goto(base + '/#/board'); await co.waitForSelector('.bcard'); await shot(co, 'coach-board');
   await co.selectOption('.bcard [data-act=stage]', 'Offered'); await co.waitForFunction(() => /Moved/.test([...document.querySelectorAll('.toast')].map(t => t.textContent).join()));
   // message athlete
@@ -237,6 +243,8 @@ let step = 0;
   await v.goto(base + '/#/u/' + athId); await v.waitForSelector('a.schl'); await v.click('a.schl'); await v.waitForSelector('.sch-hero'); await shot(v, 'program-page');
   if (!(await v.locator('.sch-hero h1', { hasText: 'UT Dallas' }).count())) errors.push('program page title wrong');
   await v.goto(base + '/#/athletes'); await v.fill('[data-form=filters] [name=q]', 'dallas'); await v.waitForSelector('#results a.chip'); 
+  await v.goto(base + '/#/news'); await v.waitForSelector('.nb-score'); await v.waitForSelector('.nb-commitment'); await shot(v, 'news-page');
+  await v.click('[data-act=ntype][data-v=Result]'); if (await v.locator('.nb-commitment').count()) errors.push('news filter not applied');
   await v.goto(base + '/#/nonsense/route'); await v.waitForTimeout(200); await shot(v, 'visitor-404');
 
   await browser.close();
