@@ -10,6 +10,9 @@ const PORT = +process.env.PORT || 3000;
 const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
 const PUBLIC = path.join(__dirname, 'public');
 const db = createDB(DATA);
+// The page asks for app.js and app.css with a version tag, so a new deploy never mixes old and new files.
+const ASSET_V = require('crypto').createHash('sha1').update(['app.js', 'app.css'].map(f => { try { return fs.readFileSync(path.join(PUBLIC, f)); } catch (e) { return ''; } }).join('')).digest('hex').slice(0, 10);
+const INDEX = (() => { try { return fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8').replace('/app.js"', '/app.js?v=' + ASSET_V + '"').replace('/app.css"', '/app.css?v=' + ASSET_V + '"'); } catch (e) { return null; } })();
 const D = db.data;
 const err = db.err;
 
@@ -33,7 +36,7 @@ function pub(u) {
     num: u.num || '', bio: u.bio || '', rate: u.rate || null, open: u.open || [], brand: u.brand || null,
     av: u.av ? '/media/' + u.av : null, ht: u.ht || '', wt: u.wt || '', home: u.home || '', grad: u.grad || '', gpa: u.gpa || '', major: u.major || '',
     hl: u.hl || '', soc: u.soc || {}, stats: u.stats || [], meas: u.meas || [], awards: u.awards || [], title: u.title || '', div: u.div || '',
-    open4: !!u.open4, portal: !!u.portal, created: u.created || 0,
+    open4: !!u.open4, portal: !!u.portal, appear: u.appear || null, created: u.created || 0,
     verified: !!u.verified, fol: followers, fing: D.follows.filter(f => f.by === u.id).length, deals: D.offers.filter(o => o.to === u.id && ['Active', 'Delivered', 'Completed'].includes(o.status)).length };
 }
 const ADMINS = String(process.env.ADMIN_EMAILS || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
@@ -217,6 +220,10 @@ const routes = {
     if (b.awards) u.awards = (Array.isArray(b.awards) ? b.awards : []).slice(0, 8).map(x => str(x, 60)).filter(Boolean);
     if (b.open4 != null) u.open4 = !!b.open4;
     if (b.portal != null && u.role === 'athlete') u.portal = !!b.portal;
+    if (b.appear && typeof b.appear === 'object' && u.role === 'athlete') {
+      const area = str(b.appear.area, 60); if (!clean(area)) throw err(400, 'Keep your profile respectful.');
+      u.appear = { on: !!b.appear.on, area };
+    }
     if (u.role === 'athlete') {
       if (Array.isArray(b.rate)) u.rate = b.rate.slice(0, 3).map(x => num(x, 0, 100000));
       if (Array.isArray(b.open)) u.open = b.open.filter(c => CATS.includes(c));
@@ -563,9 +570,11 @@ const server = http.createServer(async (req, res) => {
     }
     let p = decodeURIComponent(url.pathname);
     if (p === '/') p = '/index.html';
+    if (p === '/index.html' && INDEX) return send(res, 200, INDEX, TYPES_MIME['.html'], { 'cache-control': 'no-cache' });
+    const versioned = url.searchParams.get('v') === ASSET_V;
     const f = path.normalize(path.join(PUBLIC, p));
     if (!f.startsWith(PUBLIC) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return send(res, 404, 'Not found', 'text/plain');
-    send(res, 200, fs.readFileSync(f), TYPES_MIME[path.extname(f)] || 'application/octet-stream', { 'cache-control': p.endsWith('.html') ? 'no-cache' : 'public, max-age=300' });
+    send(res, 200, fs.readFileSync(f), TYPES_MIME[path.extname(f)] || 'application/octet-stream', { 'cache-control': p.endsWith('.html') ? 'no-cache' : versioned ? 'public, max-age=31536000, immutable' : 'public, max-age=300' });
   } catch (e) {
     if (!e.status) console.error(e);
     send(res, e.status || 500, { error: e.status ? e.message : 'Something went wrong on our side. Try again.' });

@@ -326,7 +326,8 @@ function render() {
       <div class="foot"><span>Join free to follow athletes, message and make deals.</span><button class="btn pri sm" data-act="join">Join free</button><span><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a></span></div></nav>`;
   const tabbar = me ? `<nav class="tabbar" aria-label="Main">${nav.map(n => `<a class="${isOn(n.href) ? 'on' : ''}" href="#/${n.href}">${ic(n.icon)}${esc(n.short || n.label)}${n.badge ? `<span class="badge">${n.badge}</span>` : ''}</a>`).join('')}</nav>` : '';
   app.innerHTML = `${top}<div class="shell">${side}<main class="main" id="main">${S.cmp.length && route()[0] !== 'compare' ? `<div class="cmptray"><span>${plural(S.cmp.length, 'athlete')} to compare</span><a class="btn pri sm" href="#/compare">Compare</a><button class="btn ghost sm" data-act="cmpclear">Clear</button></div>` : ''}${me && me.tempPw && route()[0] !== 'settings' ? `<div class="note warn" style="max-width:1080px;margin:0 auto 16px">${ic('alert')}<span><b>You’re using a temporary password.</b> <a href="#/settings">Choose a new one</a> to keep your account secure.</span></div>` : ''}${view.html}</main></div>${tabbar}`;
-  document.title = (view.title ? view.title + ' · ' : '') + 'Next Level';
+  const un = unreadMsgs() + hotNotes();
+  document.title = (un ? `(${un}) ` : '') + (view.title ? view.title + ' · ' : '') + 'Next Level';
   if (view.after) view.after();
 }
 
@@ -596,6 +597,7 @@ function filtered() {
   if (f.fol) list = list.filter(u => followers(u) >= +f.fol);
   if (f.saved) list = list.filter(u => (D().saved || []).includes(u.id));
   if (f.portal) list = list.filter(u => u.portal);
+  if (f.appear) list = list.filter(u => u.appear && u.appear.on);
   const sorts = { best: (a, b) => completeness(b) - completeness(a) || b.created - a.created, new: (a, b) => b.created - a.created, fol: (a, b) => followers(b) - followers(a), rate: (a, b) => ((a.rate || [0])[1]) - ((b.rate || [0])[1]), name: (a, b) => (a.l + a.f).localeCompare(b.l + b.f) };
   return list.slice().sort(sorts[f.sort] || sorts.best);
 }
@@ -620,6 +622,7 @@ function search() {
       <select class="in" name="grad" aria-label="Grad year"><option value="">Any grad year</option>${opt(GRADS(), f.grad)}</select>
       ${r === 'coach' ? `<label class="check" style="align-self:center"><input type="checkbox" name="portal" ${f.portal ? 'checked' : ''}> Transfer portal only</label>` : ''}
       ${r === 'coach' ? `<select class="in" name="gpa" aria-label="Minimum GPA"><option value="">Any GPA</option>${['2.5', '3.0', '3.5', '3.8'].map(g => `<option value="${g}" ${f.gpa === g ? 'selected' : ''}>${g}+ GPA</option>`).join('')}</select>` : ''}
+      ${r === 'brand' ? `<label class="check" style="align-self:center"><input type="checkbox" name="appear" ${f.appear ? 'checked' : ''}> Does appearances</label>` : ''}
       ${r === 'brand' ? `<select class="in" name="fol" aria-label="Minimum followers"><option value="">Any followers</option>${[1000, 5000, 10000, 50000, 100000].map(n => `<option value="${n}" ${+f.fol === n ? 'selected' : ''}>${compact(n)}+ followers</option>`).join('')}</select>` : ''}
       ${r === 'brand' ? `<select class="in" name="cat" aria-label="Open to category"><option value="">Any category</option>${opt(d.rules.CATS, f.cat)}</select>` : ''}
       <select class="in" name="sort" aria-label="Sort"><option value="best" ${f.sort === 'best' ? 'selected' : ''}>Most complete</option><option value="new" ${f.sort === 'new' ? 'selected' : ''}>Newest</option><option value="name" ${f.sort === 'name' ? 'selected' : ''}>Name</option>${r === 'brand' ? `<option value="fol" ${f.sort === 'fol' ? 'selected' : ''}>Most followers</option><option value="rate" ${f.sort === 'rate' ? 'selected' : ''}>Lowest post rate</option>` : ''}</select>
@@ -675,6 +678,7 @@ function profile(id) {
       socials.length ? box('Socials', `<div class="soc">${socials.map(s => `<a href="${s[2]}${esc(soc[s[0]])}" target="_blank" rel="noopener noreferrer">${s[3] ? `<b>${compact(s[3])}</b>` : ''}<span>${s[1]}</span></a>`).join('')}</div><p class="tiny dim" style="margin:10px 0 0">Follower counts are added by the athlete.</p>`, true) : '',
       (u.awards || []).length ? box('Awards', `<ul style="margin:0;padding-left:18px;display:grid;gap:6px">${u.awards.map(a => `<li>${esc(a)}</li>`).join('')}</ul>`, true) : '',
       (r === 'brand' || mine) ? box('NIL', `<div class="rates">${['Story', 'Post or reel', 'Appearance'].map((l, i) => `<div><b>${money((u.rate || [])[i])}</b><span>${l}</span></div>`).join('')}</div>
+        ${u.appear && u.appear.on ? `<p class="small" style="margin:14px 0 0">${ic('check', 'vf')} Available for appearances${u.appear.area ? ' in ' + esc(u.appear.area) : ''}</p>` : ''}
         <div class="eyebrow" style="margin:16px 0 8px">Open to</div><div class="row wrap">${(u.open || []).length ? u.open.map(c => `<span class="chip">${esc(c)}</span>`).join('') : '<span class="small dim">No categories selected</span>'}</div>`, true) : ''
     ].join('');
     main = `<div class="sec-h"><h2 class="h2">Posts</h2></div>${posts.length ? `<div class="pgrid">${posts.map(p => `<a href="#/p/${p.id}" aria-label="${esc(p.type)} post">${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="txt">${esc(p.cap)}</span>`}</a>`).join('')}</div>`
@@ -815,6 +819,7 @@ function offerSheet(id, camp) {
     ${who(a)}
     <div class="grid2"><label class="field"><span>Category</span><select class="in" name="cat">${d.rules.CATS.map(x => `<option ${me.brand && me.brand.cat === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>
       <label class="field"><span>Deliverable</span><select class="in" name="del">${d.rules.DELIVERABLES.map((x, i) => `<option value="${i}" ${i === 1 ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label></div>
+    <div class="note warn" data-appwarn hidden>${ic('alert')}<span>${esc(a.f)} hasn’t said they do in-person appearances${a.appear && a.appear.area ? '' : ''}. Message them first to check.</span></div>
     <label class="field"><span>Details</span><input class="in" name="what" maxlength="200" placeholder="e.g. 1 reel showing our new protein bar, tag @brand" value="${camp ? esc(camp.del.slice(0, 200)) : ''}"></label>
     <div class="grid2"><label class="field"><span>Amount (USD)</span><input class="in" name="amt" type="number" min="1" step="1" inputmode="numeric" placeholder="${(a.rate || [0, 500])[1]}" value="${amt0 ? esc(amt0.replace(/,/g, '')) : ''}"></label>
       <label class="field"><span>Due</span><input class="in" name="due" maxlength="30" placeholder="e.g. Dec 5"></label></div>
@@ -833,7 +838,8 @@ function offerSheet(id, camp) {
       s.querySelector('[data-act=sendoffer]').disabled = !r.checks.every(c => c.ok);
     } catch (e) { if (my === seq) $('#ckstate', s).textContent = e.message; }
   };
-  f.addEventListener('input', () => { clearTimeout(t); t = setTimeout(check, 350); });
+  const aw = () => { s.querySelector('[data-appwarn]').hidden = !(f.del.value === '2' && !(a.appear && a.appear.on)); };
+  f.addEventListener('input', () => { aw(); clearTimeout(t); t = setTimeout(check, 350); }); f.addEventListener('change', aw);
   if (amt0) check();
 }
 const checksHtml = checks => checks.map(c => `<div class="ck ${c.ok ? 'ok' : 'no'}">${ic(c.ok ? 'okc' : 'noc')}<div><b>${esc(c.t)}</b><span>${esc(c.d)}</span></div></div>`).join('');
@@ -1034,6 +1040,8 @@ function editProfile() {
       + sec('Socials', `${[['ig', 'Instagram'], ['tt', 'TikTok'], ['x', 'X']].map(([k, l]) => `<div class="grid2"><label class="field"><span>${l} handle</span><input class="in" name="soc_${k}" maxlength="40" placeholder="@" value="${esc(soc[k])}"></label><label class="field"><span>${l} followers</span><input class="in" name="soc_${k}N" type="number" min="0" inputmode="numeric" value="${soc[k + 'N'] || ''}"></label></div>`).join('')}`, 'Brands see your follower counts when they search.')
       + sec('Awards', `<label class="field"><span>One per line</span><textarea class="in" name="awards" rows="3" placeholder="All-Conference First Team (2025)">${esc((me.awards || []).join('\n'))}</textarea></label>`)
       + sec('NIL', `<div class="field"><span>Rate card (USD)</span><div class="grid3">${['Story', 'Post or reel', 'Appearance'].map((l, i) => `<label class="field"><span class="tiny dim">${l}</span><input class="in" name="rate${i}" type="number" min="0" inputmode="numeric" value="${(me.rate || [])[i] || 0}"></label>`).join('')}</div><small>Offers far above your rates get flagged as over fair market value.</small></div>
+        <label class="check"><input type="checkbox" name="appear_on" ${me.appear && me.appear.on ? 'checked' : ''}> I’m available for in-person appearances (signings, store events, camps).</label>
+        <label class="field"><span>Where you can do appearances</span><input class="in" name="appear_area" maxlength="60" placeholder="e.g. Dallas–Fort Worth" value="${esc(me.appear ? me.appear.area : '')}"></label>
         <div class="field"><span>Open to brands in</span><div class="row wrap" data-cats>${d.rules.CATS.map(c => `<button type="button" class="chip" aria-pressed="${(me.open || []).includes(c)}" data-act="cat" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div><small>${esc(d.rules.BANNED.join(', '))} are always blocked.</small></div>`);
   } else if (r === 'coach') {
     body = sec('Basics', `<div class="grid2"><label class="field"><span>First name</span><input class="in" name="f" maxlength="30" value="${esc(me.f)}"></label><label class="field"><span>Last name</span><input class="in" name="l" maxlength="30" value="${esc(me.l)}"></label></div>
@@ -1285,7 +1293,7 @@ document.addEventListener('change', e => {
 });
 let ft = null;
 document.addEventListener('input', e => { if (e.target.id === 'acctq') { S.ui.acctq = e.target.value; const b = $('#acctlist'); if (b) b.innerHTML = accountRows(); return; } const f = e.target.form; if (f && f.dataset.form === 'filters') { clearTimeout(ft); ft = setTimeout(() => readFilters(f), 150); } });
-function readFilters(f) { const box = $('#results'); if (!box || !f.isConnected) return; const b = fd(f); Object.assign(S.ui.f, { q: b.q || '', sp: b.sp || '', yr: b.yr || '', st: b.st || '', pos: b.pos || '', cat: b.cat || '', sort: b.sort || 'best', vf: !!b.vf, portal: !!b.portal, grad: b.grad || '', gpa: b.gpa || '', fol: b.fol || '' }); box.innerHTML = results(); }
+function readFilters(f) { const box = $('#results'); if (!box || !f.isConnected) return; const b = fd(f); Object.assign(S.ui.f, { q: b.q || '', sp: b.sp || '', yr: b.yr || '', st: b.st || '', pos: b.pos || '', cat: b.cat || '', sort: b.sort || 'best', vf: !!b.vf, portal: !!b.portal, appear: !!b.appear, grad: b.grad || '', gpa: b.gpa || '', fol: b.fol || '' }); box.innerHTML = results(); }
 
 // ---------------------------------------------------------------- forms
 const FORM = {
@@ -1323,6 +1331,7 @@ const FORM = {
     for (const k of ['f', 'l', 'sch', 'sp', 'pos', 'num', 'yr', 'grad', 'div', 'ht', 'wt', 'home', 'bio', 'gpa', 'major', 'hl', 'title', 'st']) if (k in b) out[k] = b[k].trim();
     if (me.role === 'athlete') {
       out.portal = !!b.portal;
+      out.appear = { on: !!b.appear_on, area: (b.appear_area || '').trim() };
       out.stats = collectPairs(f, 'stats'); out.meas = collectPairs(f, 'meas');
       out.awards = (b.awards || '').split('\n').map(s => s.trim()).filter(Boolean);
       out.soc = { ig: b.soc_ig, tt: b.soc_tt, x: b.soc_x, igN: +b.soc_igN || 0, ttN: +b.soc_ttN || 0, xN: +b.soc_xN || 0 };

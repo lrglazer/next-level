@@ -214,6 +214,13 @@ server.listen(0, async () => {
     r = await call('/api/me', { portal: true }, A.token); ok(r.j.me.portal === true, 'athlete sets portal');
     r = await call('/api/me', { portal: true }, B.token); ok(!r.j.me.portal, 'only athletes have portal status');
 
+    // --- round 8: appearances + versioned assets
+    r = await call('/api/me', { appear: { on: true, area: 'Dallas–Fort Worth' } }, A.token); ok(r.j.me.appear.on && r.j.me.appear.area === 'Dallas–Fort Worth', 'appearance availability');
+    const idx = await (await fetch(base + '/')).text(), vm = /app\.js\?v=([a-f0-9]{10})/.exec(idx);
+    ok(vm && /app\.css\?v=/.test(idx), 'index uses versioned assets');
+    ok(/immutable/.test((await fetch(base + '/app.js?v=' + vm[1])).headers.get('cache-control')), 'versioned assets cached long');
+    ok(!/immutable/.test((await fetch(base + '/app.js?v=old')).headers.get('cache-control')), 'stale version not cached long');
+
     // --- delete account
     ok((await call('/api/delete-account', { password: 'wrong' }, F.token)).s === 401, 'delete needs password');
     ok((await call('/api/delete-account', { password: 'password123' }, F.token)).s === 200, 'delete');
