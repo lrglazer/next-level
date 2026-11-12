@@ -431,17 +431,17 @@ button.media { display: block; width: 100%; padding: 0; border: 0; border-top: 1
 .av svg { width: 16px; height: 16px; }
 
 /* ---------- sport field art and broadcast plates ---------- */
-.field { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.field g { stroke: rgba(236, 238, 241, .09); }
-.field .hot { stroke: var(--blue); stroke-opacity: .55; stroke-width: 2; }
-.field.mini { height: 92px; inset: 0 0 auto 0; opacity: .7; -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent); mask-image: linear-gradient(180deg, #000 30%, transparent); }
-.acard > *:not(.field):not(.jn) { position: relative; }
+.fieldart { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.fieldart g { stroke: rgba(236, 238, 241, .09); }
+.fieldart .hot { stroke: var(--blue); stroke-opacity: .55; stroke-width: 2; }
+.fieldart.mini { height: 92px; inset: 0 0 auto 0; opacity: .7; -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent); mask-image: linear-gradient(180deg, #000 30%, transparent); }
+.acard > *:not(.fieldart):not(.jn) { position: relative; }
 .prof .ban { height: 168px; background: linear-gradient(180deg, #0F1B27 0%, var(--s1) 100%); }
-.prof .ban .field g { stroke: rgba(236, 238, 241, .12); }
+.prof .ban .fieldart g { stroke: rgba(236, 238, 241, .12); }
 .prof .ban .line { background: var(--blue); }
 .prof-coach .ban .line { background: var(--yellow); }
 .prof-brand .ban .line { background: var(--red); }
-.prof-brand .ban .field .hot, .prof-coach .ban .field .hot { stroke: var(--t3); }
+.prof-brand .ban .fieldart .hot, .prof-coach .ban .fieldart .hot { stroke: var(--t3); }
 .prof h1 { flex-wrap: wrap; }
 .plate { display: inline-flex; align-items: stretch; gap: 0; min-width: 0; }
 .plate .num { display: grid; place-items: center; min-width: 52px; padding: 6px 10px 0; margin-right: 12px; background: var(--yellow); color: #0B0C0E; border-radius: 6px; font: 600 40px/1 var(--f-d); }
@@ -457,7 +457,7 @@ button.media { display: block; width: 100%; padding: 0; border: 0; border-top: 1
 .demo { margin: 0; display: grid; gap: 10px; justify-items: center; }
 .demo-card { position: relative; width: 100%; max-width: 380px; padding: 20px; border-radius: 16px; background: var(--s1); border: 1px solid var(--line2); overflow: hidden; display: grid; gap: 16px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, .55), 0 0 0 1px rgba(34, 166, 255, .08); transform: rotate(-1.5deg); }
-.demo-card > *:not(.field) { position: relative; }
+.demo-card > *:not(.fieldart) { position: relative; }
 .demo-top { display: flex; gap: 14px; align-items: center; }
 .demo-num { display: grid; place-items: center; width: 56px; height: 56px; padding-top: 6px; border-radius: 8px; background: var(--yellow); color: #0B0C0E; font: 600 40px/1 var(--f-d); }
 .demo-nm { font: 600 34px/0.9 var(--f-d); text-transform: uppercase; padding-top: 4px; }
@@ -469,7 +469,7 @@ button.media { display: block; width: 100%; padding: 0; border: 0; border-top: 1
 @media (max-width: 860px) { .herogrid { grid-template-columns: minmax(0, 1fr); gap: 36px; } .demo-card { transform: none; } .hero { padding-top: 48px; } }
 .hero .herofield { left: auto; right: 0; width: 62%; -webkit-mask-image: linear-gradient(90deg, transparent, #000 35%); mask-image: linear-gradient(90deg, transparent, #000 35%); }
 .hero .herofield .hot { stroke-opacity: .35; }
-.field.mini { opacity: .45; }
+.fieldart.mini { opacity: .45; }
 .numchip { display: inline-grid; place-items: center; min-width: 30px; height: 26px; padding: 3px 6px 0; border-radius: 4px; background: var(--yellow); color: #0B0C0E; font: 600 22px/1 var(--f-d); }
 @media (max-width: 860px) { .hero .herofield { width: 100%; opacity: .5; } }
 /* film */
@@ -485,7 +485,7 @@ button.media { display: block; width: 100%; padding: 0; border: 0; border-top: 1
   .shell { display: block !important; } .main { padding: 0 !important; } .page { max-width: none !important; }
   .cols { grid-template-columns: 1fr 1fr !important; } .cols > aside { position: static !important; }
   .card, .prof .bigstats > div, .rates > div, .soc a { background: #fff !important; border-color: #ccc !important; color: #111 !important; box-shadow: none !important; }
-  .prof .ban { height: 70px !important; background: #f2f4f6 !important; } .field g { stroke: rgba(0,0,0,.12) !important; }
+  .prof .ban { height: 70px !important; background: #f2f4f6 !important; } .fieldart g { stroke: rgba(0,0,0,.12) !important; }
   .prof .bigstats b, .rates b, .soc a b { color: #111 !important; } .muted, .dim, .kv dt, .prof .line1, .prof .line2 { color: #555 !important; }
   .plate .num { border: 1px solid #111; } a { color: #111 !important; text-decoration: none !important; }
   .post, .empty { display: none !important; }
@@ -526,11 +526,13 @@ button.media { display: block; width: 100%; padding: 0; border: 0; border-top: 1
 @media (max-width: 600px) { .cmp tbody th { width: 96px; white-space: normal; } .cmp { min-width: 420px; } .stat { padding: 12px; } .stat span { font-size: 11px; } }
 /* program pages */
 .sch-hero { position: relative; overflow: hidden; padding: 28px 24px; }
-.sch-hero .field { opacity: .8; }
-.sch-hero > *:not(.field) { position: relative; }
+.sch-hero .fieldart { opacity: .8; }
+.sch-hero > *:not(.fieldart) { position: relative; }
 .sch-hero h1 { font: 600 52px/0.9 var(--f-d); text-transform: uppercase; }
 .sch-stats { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 16px; }
 .sch-stats b { display: block; font: 600 34px/0.9 var(--f-d); color: var(--yellow); }
 .sch-stats span { font-size: 12px; color: var(--t3); text-transform: uppercase; letter-spacing: .05em; }
 a.schl { color: inherit; } a.schl:hover { color: var(--blue); }
-.sch-hero .field { -webkit-mask-image: linear-gradient(90deg, transparent 0 40%, #000 75%); mask-image: linear-gradient(90deg, transparent 0 40%, #000 75%); }
+.sch-hero .fieldart { -webkit-mask-image: linear-gradient(90deg, transparent 0 40%, #000 75%); mask-image: linear-gradient(90deg, transparent 0 40%, #000 75%); }
+.who .sub { display: block; }
+a.card.deal > .row > svg { width: 20px; height: 20px; flex: none; color: var(--t3); }

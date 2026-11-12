@@ -116,7 +116,7 @@ const FIELD = {
 };
 const SPORT_FIELD = { Volleyball: 'court', 'Beach Volleyball': 'court', Basketball: 'hoops', Football: 'gridiron', Soccer: 'pitch', Lacrosse: 'pitch', 'Field Hockey': 'pitch', 'Water Polo': 'pool',
   Baseball: 'diamond', Softball: 'diamond', 'Track & Field': 'track', 'Cross Country': 'track', 'Swimming & Diving': 'pool', Rowing: 'pool', Tennis: 'tennis', Golf: 'links', Wrestling: 'mat', Gymnastics: 'mat', 'Ice Hockey': 'rink' };
-const field = (sport, cls, fit) => `<svg class="field${cls ? ' ' + cls : ''}" viewBox="0 0 400 160" preserveAspectRatio="${fit || 'xMidYMid slice'}" aria-hidden="true"><g fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${FIELD[SPORT_FIELD[sport]] || FIELD.grid}</g></svg>`;
+const field = (sport, cls, fit) => `<svg class="fieldart${cls ? ' ' + cls : ''}" viewBox="0 0 400 160" preserveAspectRatio="${fit || 'xMidYMid slice'}" aria-hidden="true"><g fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${FIELD[SPORT_FIELD[sport]] || FIELD.grid}</g></svg>`;
 
 // ---------------------------------------------------------------- state and server
 const KEY = 'nl.token';
