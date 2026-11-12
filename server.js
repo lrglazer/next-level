@@ -510,11 +510,11 @@ const routes = {
     return sync(ctx.user);
   } },
   // Turns the owner's own login into the official Next Level account: personal details, posts and follows are removed,
-  // the login and admin access stay. Can't be undone from the app.
+  // the login and admin access stay. Confirmed by typing NEXT LEVEL. Can't be undone from the app.
   'POST /api/admin/official': { auth: true, fn: async (b, ctx) => {
     const u = ctx.user;
     if (!isAdmin(u)) throw err(403, 'Admins only.');
-    if (!db.checkLogin(u.email, b.password)) throw err(401, 'Enter your password to confirm.');
+    if (b.confirm !== 'NEXT LEVEL') throw err(400, 'Type NEXT LEVEL to confirm.');
     const old = new Set(D.posts.filter(p => p.by === u.id).map(p => p.id));
     D.posts = D.posts.filter(p => !old.has(p.id)); D.props = D.props.filter(x => !old.has(x.post)); D.comments = D.comments.filter(c => !old.has(c.post));
     D.follows = D.follows.filter(f => f.by !== u.id && f.to !== u.id);
