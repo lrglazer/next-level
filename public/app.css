@@ -566,3 +566,7 @@ input[type=range] { accent-color: var(--blue); height: 28px; }
 .sbr b { font: 600 40px/0.9 var(--f-d); min-width: 2ch; text-align: right; }
 .sbr.w { color: var(--t); } .sbr.w b { color: var(--yellow); }
 .post .nb + .bd { padding-top: 12px; }
+.freeline { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; color: var(--t2); font-size: 15px; max-width: 560px; }
+.freeline svg { width: 18px; height: 18px; flex: none; margin-top: 2px; color: var(--green); }
+.freeline b { color: var(--t); font-weight: 500; }
+.freeline.sm { margin: 0; padding: 10px 12px; border-radius: var(--r); background: var(--green-d); font-size: 13px; }

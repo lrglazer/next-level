@@ -366,7 +366,8 @@ function landing() {
   <section class="hero">${field('Volleyball', 'herofield', 'xMaxYMid meet')}<div class="in2 herogrid"><div>
     <h1>Get recruited.<br>Get paid.<br>Do it right.</h1>
     <p>Next Level is where college athletes build a stat card coaches trust, and land NIL deals with compliance checks built into every offer.</p>
-    <div class="row wrap"><button class="btn pri lg" data-act="join" data-role="athlete">I’m a college athlete</button><button class="btn lg" data-act="join" data-role="brand">I’m a brand</button><button class="btn lg" data-act="join" data-role="coach">I’m a coach</button></div></div>
+    <div class="row wrap"><button class="btn pri lg" data-act="join" data-role="athlete">I’m a college athlete · Free</button><button class="btn lg" data-act="join" data-role="brand">I’m a brand</button><button class="btn lg" data-act="join" data-role="coach">I’m a coach</button></div>
+    <div class="freeline">${ic('check')}<span><b>Free for athletes. Always.</b> No cost to join, and Next Level never takes a cut of your NIL pay.</span></div></div>
     <figure class="demo" aria-label="Example athlete card">
       <div class="demo-card">${field('Volleyball', 'mini')}<div class="demo-top"><span class="demo-num">12</span><div><div class="demo-nm">Your name</div><div class="demo-meta">Volleyball · Outside hitter · Jr</div></div></div>
         <div class="strip"><div><b>312</b><span>Kills</span></div><div><b>.287</b><span>Hit %</span></div><div><b>41</b><span>Aces</span></div><div><b>3.8</b><span>GPA</span></div></div>
@@ -406,7 +407,7 @@ function landing() {
   </section>
   <section class="lsec" style="text-align:center">
     <h2 class="h1">Free for athletes. Always.</h2>
-    <p class="muted" style="margin:14px auto 24px;max-width:520px">Make your account in a minute. Your card is ready for coaches and brands as soon as you add your stats.</p>
+    <p class="muted" style="margin:14px auto 24px;max-width:520px">No cost to join, no subscription, and Next Level never takes a cut of your NIL pay. Brands and coaches pay for their tools, so you don’t have to.</p>
     <button class="btn pri lg" data-act="join" data-role="athlete">Join Next Level</button>
   </section>
   <footer class="lfoot"><div class="in2"><span class="logo">${LOGO}<b style="font-size:20px">Next Level</b></span><span>A marketplace, not an agent.</span><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="mailto:${SUPPORT}">Contact</a></div></footer>
@@ -444,6 +445,7 @@ function authSheet(mode, preRole) {
       <label class="field"><span>Email</span><input class="in" name="email" type="email" autocomplete="email" required></label>
       <label class="field"><span>Password</span><input class="in" name="password" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" required></label>
       <div data-for="athlete" class="stack">
+        <div class="freeline sm">${ic('check')}<span><b>Free for athletes, always.</b> No fees to join and no cut of your deals.</span></div>
         <label class="check"><input type="checkbox" name="adult"> I’m 18 or older and currently enrolled at the school above.</label>
         <label class="check"><input type="checkbox" name="intl"> I’m an international student (we’ll show you visa reminders on NIL deals).</label>
       </div>
@@ -947,7 +949,7 @@ function athleteDeals() {
       <div class="card stat"><b>${sets.done.length}</b><span>Completed</span></div></div>
     ${me.intl ? `<div class="note warn" style="margin-bottom:16px">${ic('alert')}<span><b>International student?</b> Visa rules may limit NIL work in the U.S. Talk to your international student office before accepting any deal.</span></div>` : ''}
     <div class="tabs" role="tablist">${T.map(([k, l, n]) => `<button role="tab" aria-selected="${tab === k}" data-act="tab" data-k="adeals" data-v="${k}">${l}${n ? ` <span class="count">${n}</span>` : ''}</button>`).join('')}</div>${body}
-    <p class="tiny dim" style="margin-top:20px">Payments happen directly between you and the brand for now. NIL income is usually taxable, so keep a record of what you’re paid. Next Level is a marketplace, not an agent.</p></div>` };
+    <p class="tiny dim" style="margin-top:20px">Next Level is free for athletes and never takes a cut of your pay. Payments happen directly between you and the brand for now. NIL income is usually taxable, so keep a record of what you’re paid. Next Level is a marketplace, not an agent.</p></div>` };
 }
 function brandDeals() {
   const me = ME(), mine = D().offers.filter(o => o.brandId === me.id).sort((a, b) => b.at - a.at);
