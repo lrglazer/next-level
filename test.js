@@ -221,6 +221,14 @@ server.listen(0, async () => {
     ok(/immutable/.test((await fetch(base + '/app.js?v=' + vm[1])).headers.get('cache-control')), 'versioned assets cached long');
     ok(!/immutable/.test((await fetch(base + '/app.js?v=old')).headers.get('cache-control')), 'stale version not cached long');
 
+    // --- round 9: pinned post
+    const pp = (await call('/api/posts', { cap: 'Pin me', type: 'Highlight' }, A.token)).j.post;
+    r = await call('/api/posts/pin', { id: pp.id }, A.token); ok(r.j.me.pin === pp.id, 'pin post');
+    ok((await call('/api/posts/pin', { id: pp.id }, B.token)).s === 404, 'only own posts pin');
+    r = await call('/api/posts/pin', { id: pp.id }, A.token); ok(r.j.me.pin === null, 'unpin');
+    await call('/api/posts/pin', { id: pp.id }, A.token); await call('/api/posts/delete', { id: pp.id }, A.token);
+    ok((await call('/api/sync', null, A.token)).j.me.pin === null, 'deleting pinned post clears pin');
+
     // --- delete account
     ok((await call('/api/delete-account', { password: 'wrong' }, F.token)).s === 401, 'delete needs password');
     ok((await call('/api/delete-account', { password: 'password123' }, F.token)).s === 200, 'delete');

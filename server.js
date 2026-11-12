@@ -36,7 +36,7 @@ function pub(u) {
     num: u.num || '', bio: u.bio || '', rate: u.rate || null, open: u.open || [], brand: u.brand || null,
     av: u.av ? '/media/' + u.av : null, ht: u.ht || '', wt: u.wt || '', home: u.home || '', grad: u.grad || '', gpa: u.gpa || '', major: u.major || '',
     hl: u.hl || '', soc: u.soc || {}, stats: u.stats || [], meas: u.meas || [], awards: u.awards || [], title: u.title || '', div: u.div || '',
-    open4: !!u.open4, portal: !!u.portal, appear: u.appear || null, created: u.created || 0,
+    open4: !!u.open4, portal: !!u.portal, appear: u.appear || null, pin: u.pin || null, created: u.created || 0,
     verified: !!u.verified, fol: followers, fing: D.follows.filter(f => f.by === u.id).length, deals: D.offers.filter(o => o.to === u.id && ['Active', 'Delivered', 'Completed'].includes(o.status)).length };
 }
 const ADMINS = String(process.env.ADMIN_EMAILS || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
@@ -302,12 +302,19 @@ const routes = {
     }
     return { ok: true };
   } },
+  'POST /api/posts/pin': { auth: true, fn: async (b, ctx) => {
+    const id = +b.id;
+    if (id && !D.posts.some(p => p.id === id && p.by === ctx.user.id)) throw err(404, 'Post not found.');
+    ctx.user.pin = ctx.user.pin === id || !id ? null : id; db.touch('users');
+    return sync(ctx.user);
+  } },
   'POST /api/posts/delete': { auth: true, fn: async (b, ctx) => {
     const p = D.posts.find(x => x.id === +b.id);
     if (!p || p.by !== ctx.user.id) throw err(404, 'Post not found.');
     db.removeMedia(p.img); D.posts.splice(D.posts.indexOf(p), 1);
     D.comments = D.comments.filter(c => c.post !== p.id); D.props = D.props.filter(x => x.post !== p.id);
-    db.touch('posts', 'comments', 'props'); return { ok: true };
+    if (ctx.user.pin === p.id) ctx.user.pin = null;
+    db.touch('posts', 'comments', 'props', 'users'); return { ok: true };
   } },
   'POST /api/props': { auth: true, fn: async (b, ctx) => {
     const id = +b.post, k = b.k;

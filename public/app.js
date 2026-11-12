@@ -642,7 +642,7 @@ function profile(id) {
   const acts = [];
   if (mine) {
     acts.push(`<a class="btn" href="#/edit">${ic('edit')}Edit profile</a>`);
-    if (u.role === 'athlete') acts.push(`<button class="btn pri" data-act="compose">${ic('plus')}New post</button>`);
+    if (u.role === 'athlete') acts.push(`<button class="btn" data-act="storycard">${ic('image')}Share card</button>`, `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>`);
   } else {
     if (r === 'brand' && u.role === 'athlete') { acts.push(`<button class="btn pri" data-act="offer" data-id="${u.id}">${ic('dollar')}Send offer</button>`); acts.push(`<button class="btn" data-act="save" data-id="${u.id}">${ic('star')}${(D().saved || []).includes(u.id) ? 'Saved' : 'Save'}</button>`); }
     if ((r === 'coach' || r === 'brand') && u.role === 'athlete') acts.push(`<button class="btn" data-act="cmpadd" data-id="${u.id}" aria-pressed="${S.cmp.includes(u.id)}">${S.cmp.includes(u.id) ? 'In compare' : 'Compare'}</button>`);
@@ -681,8 +681,9 @@ function profile(id) {
         ${u.appear && u.appear.on ? `<p class="small" style="margin:14px 0 0">${ic('check', 'vf')} Available for appearances${u.appear.area ? ' in ' + esc(u.appear.area) : ''}</p>` : ''}
         <div class="eyebrow" style="margin:16px 0 8px">Open to</div><div class="row wrap">${(u.open || []).length ? u.open.map(c => `<span class="chip">${esc(c)}</span>`).join('') : '<span class="small dim">No categories selected</span>'}</div>`, true) : ''
     ].join('');
-    main = `<div class="sec-h"><h2 class="h2">Posts</h2></div>${posts.length ? `<div class="pgrid">${posts.map(p => `<a href="#/p/${p.id}" aria-label="${esc(p.type)} post">${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="txt">${esc(p.cap)}</span>`}</a>`).join('')}</div>`
-      : `<div class="card">${empty('image', 'No posts yet', mine ? 'Share a highlight, game day or training session.' : '', mine ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : '')}</div>`}`;
+    const pinned = u.pin ? posts.find(p => p.id === u.pin) : null, rest = pinned ? posts.filter(p => p !== pinned) : posts;
+    main = `${pinned ? `<div class="sec-h"><h2 class="h2">Pinned</h2></div>${postCard(pinned)}` : ''}<div class="sec-h"${pinned ? ' style="margin-top:8px"' : ''}><h2 class="h2">Posts</h2></div>${rest.length ? `<div class="pgrid">${rest.map(p => `<a href="#/p/${p.id}" aria-label="${esc(p.type)} post">${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="txt">${esc(p.cap)}</span>`}</a>`).join('')}</div>`
+      : pinned ? '' : `<div class="card">${empty('image', 'No posts yet', mine ? 'Share a highlight, game day or training session.' : '', mine ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : '')}</div>`}`;
   } else if (u.role === 'brand') {
     const camps = D().campaigns.filter(c => c.brand === u.id && !c.closed);
     main = `<div class="sec-h"><h2 class="h2">Open campaigns</h2></div>${camps.length ? `<div class="stack">${camps.map(campCardAthlete).join('')}</div>` : `<div class="card">${empty('brief', 'No open campaigns', mine ? 'Post a campaign and athletes can apply.' : '', mine ? '<a class="btn pri" href="#/campaigns">Post a campaign</a>' : '')}</div>`}`;
@@ -1101,6 +1102,13 @@ function accountRows() {
 // ---------------------------------------------------------------- one listener for every button
 const ACT = {
   close: () => closeSheet(),
+  storycard: el => run(el, async () => {
+    const me = ME(), blob = await storyCard(me); if (!blob) throw new Error('Couldn’t make the image. Try again.');
+    const url = URL.createObjectURL(blob), file = (me.f + '-' + me.l).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-next-level.png';
+    sheet('Your card', `<div class="stack"><img src="${url}" alt="Your athlete card image" style="width:100%;max-width:300px;justify-self:center;border-radius:12px;border:1px solid var(--line2)">
+      <p class="small muted" style="margin:0;text-align:center">Post it to your story with your profile link so coaches and brands can find you.</p></div>`,
+      `<button class="btn" data-act="copytext" data-v="${esc(location.origin + '/a/' + me.id)}">Copy profile link</button><a class="btn pri" href="${url}" download="${esc(file)}">Download image</a>`);
+  }),
   csvdeals: () => {
     const me = ME(), mine = D().offers.filter(o => me.role === 'brand' ? o.brandId === me.id : o.to === me.id).sort((a, b) => a.at - b.at);
     csv(me.role === 'brand' ? 'next-level-deals.csv' : 'next-level-earnings.csv', [[me.role === 'brand' ? 'Athlete' : 'Brand', 'Category', 'Work', 'Amount (USD)', 'Status', 'Offered', 'Accepted', 'Delivered', 'Completed', 'Post link'],
@@ -1148,7 +1156,7 @@ const ACT = {
   postmenu: el => {
     const p = D().posts.find(x => x.id === +el.dataset.id), me = ME(); if (!p) return;
     menu(el, [{ icon: 'link', label: 'Copy link', fn: () => copy(link('p/' + p.id)) },
-      ...(me && p.by === me.id ? [{ icon: 'edit', label: 'Edit caption', fn: () => editPost(p) }, { icon: 'trash', label: 'Delete post', bad: true, fn: async () => { if (await confirmBox('Delete this post?', 'It will be removed for everyone, along with its props and comments.', 'Delete', true)) run(null, async () => { await api('/api/posts/delete', { id: p.id }); await refresh(); toast('Post deleted'); if (route()[0] === 'p') go('u/' + me.id); else render(); }); } }]
+      ...(me && p.by === me.id ? [{ icon: 'star', label: me.pin === p.id ? 'Unpin from profile' : 'Pin to profile', fn: () => run(null, async () => { take(await api('/api/posts/pin', { id: p.id })); toast(ME().pin ? 'Pinned to your profile' : 'Unpinned'); render(); }) }, { icon: 'edit', label: 'Edit caption', fn: () => editPost(p) }, { icon: 'trash', label: 'Delete post', bad: true, fn: async () => { if (await confirmBox('Delete this post?', 'It will be removed for everyone, along with its props and comments.', 'Delete', true)) run(null, async () => { await api('/api/posts/delete', { id: p.id }); await refresh(); toast('Post deleted'); if (route()[0] === 'p') go('u/' + me.id); else render(); }); } }]
         : [{ icon: 'flag', label: 'Report post', bad: true, fn: () => need(() => reportSheet('post', p.id)) }])]);
   },
   profmenu: el => {
@@ -1251,6 +1259,52 @@ function csv(name, rows) {
   toast('Downloaded ' + name);
 }
 const day = t => t ? new Date(t).toISOString().slice(0, 10) : '';
+// A 1080x1920 story image of the athlete's card, drawn in the browser, for Instagram and TikTok stories.
+async function storyCard(u) {
+  try { await Promise.all([document.fonts.load('600 160px Teko'), document.fonts.load('400 40px Rubik'), document.fonts.load('500 40px Rubik')]); } catch (e) {}
+  const W = 1080, H = 1920, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'); if (!x.roundRect) x.roundRect = (a, b, w, h) => x.rect(a, b, w, h);
+  const D_ = 'Teko, "Arial Narrow", sans-serif', B_ = 'Rubik, system-ui, sans-serif';
+  const fit = (t, weight, size, fam, max, min) => { x.font = `${weight} ${size}px ${fam}`; while (x.measureText(t).width > max && size > min) { size -= 4; x.font = `${weight} ${size}px ${fam}`; } return size; };
+  const load = src => new Promise(ok => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+  x.fillStyle = '#0B0C0E'; x.fillRect(0, 0, W, H);
+  const g = x.createLinearGradient(0, 0, 0, 900); g.addColorStop(0, '#12263A'); g.addColorStop(1, '#0B0C0E'); x.fillStyle = g; x.fillRect(0, 0, W, 900);
+  const art = (FIELD[SPORT_FIELD[u.sp]] || FIELD.grid).replace(/class="hot"/g, 'stroke="#22A6FF" stroke-opacity=".7" stroke-width="2.2"');
+  const fimg = await load('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160" width="2000" height="800"><g fill="none" stroke="rgba(236,238,241,.16)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${art}</g></svg>`));
+  if (fimg) { x.save(); x.globalAlpha = .9; x.drawImage(fimg, -460, 80, 2000, 800); x.restore(); }
+  const fade = x.createLinearGradient(0, 600, 0, 900); fade.addColorStop(0, 'rgba(11,12,14,0)'); fade.addColorStop(1, '#0B0C0E'); x.fillStyle = fade; x.fillRect(0, 600, W, 300);
+  // brand mark
+  x.strokeStyle = '#22A6FF'; x.lineWidth = 9; x.lineCap = x.lineJoin = 'round'; x.beginPath(); x.moveTo(80, 152); x.lineTo(112, 124); x.lineTo(144, 152); x.stroke();
+  x.strokeStyle = '#FFE500'; x.lineWidth = 8; x.beginPath(); x.moveTo(92, 130); x.lineTo(112, 112); x.lineTo(132, 130); x.stroke();
+  x.fillStyle = '#ECEEF1'; x.font = `600 64px ${D_}`; x.textBaseline = 'alphabetic'; x.fillText('NEXT LEVEL', 166, 160);
+  // photo
+  let y = 760;
+  if (u.av) { const im = await load(u.av); if (im) { x.save(); x.beginPath(); x.arc(200, 560, 120, 0, Math.PI * 2); x.clip(); const k = Math.max(240 / im.width, 240 / im.height); x.drawImage(im, 200 - im.width * k / 2, 560 - im.height * k / 2, im.width * k, im.height * k); x.restore();
+    x.strokeStyle = '#0B0C0E'; x.lineWidth = 10; x.beginPath(); x.arc(200, 560, 122, 0, Math.PI * 2); x.stroke(); y = 700; } }
+  // number plate + name
+  let nx = 80;
+  if (u.num) { x.font = `600 150px ${D_}`; const w = Math.max(150, x.measureText(u.num).width + 56); x.fillStyle = '#FFE500'; x.beginPath(); x.roundRect(80, y + 20, w, 150, 16); x.fill(); x.fillStyle = '#0B0C0E'; x.fillText(u.num, 80 + (w - x.measureText(u.num).width) / 2, y + 160); nx = 80 + w + 32; }
+  x.fillStyle = '#ECEEF1'; let size = 150; const name = (u.f + ' ' + u.l).toUpperCase();
+  x.font = `600 ${size}px ${D_}`; while (x.measureText(name).width > W - nx - 60 && size > 70) { size -= 6; x.font = `600 ${size}px ${D_}`; }
+  if (x.measureText(name).width > W - nx - 60) { x.fillText(u.f.toUpperCase(), nx, y + 160 - size * .55); x.fillText(u.l.toUpperCase(), nx, y + 160 + size * .35); y += size * .4; } else x.fillText(name, nx, y + 160);
+  y += 250;
+  const l1 = [u.sp, u.pos, u.yr].filter(Boolean).join('  ·  '), l2 = [u.sch, u.st].filter(Boolean).join(', ') + (u.verified ? '   ✓ Verified' : '');
+  x.fillStyle = '#A3A9B3'; fit(l1, 400, 44, B_, W - 160, 28); x.fillText(l1, 80, y); y += 66;
+  x.fillStyle = '#6E7580'; fit(l2, 400, 40, B_, W - 160, 26); x.fillText(l2, 80, y); y += 70;
+  // stats
+  const st = (u.stats || []).slice(0, 4);
+  x.strokeStyle = '#262A31'; x.lineWidth = 3; x.beginPath(); x.moveTo(80, y); x.lineTo(W - 80, y); x.stroke(); y += 40;
+  const bh = Math.min(220, Math.floor((H - 280 - y) / 2) - 20);
+  if (st.length) st.forEach((s2, i) => { const cx = 80 + (i % 2) * 470, cy = y + Math.floor(i / 2) * (bh + 20);
+    x.fillStyle = '#121418'; x.beginPath(); x.roundRect(cx, cy, 450, bh, 20); x.fill(); x.strokeStyle = '#262A31'; x.lineWidth = 2; x.stroke();
+    x.fillStyle = '#FFE500'; fit(s2.v, 600, Math.round(bh * .58), D_, 390, 50); x.fillText(s2.v, cx + 32, cy + bh * .64);
+    x.fillStyle = '#6E7580'; fit(s2.k.toUpperCase(), 500, 32, B_, 390, 20); x.fillText(s2.k.toUpperCase(), cx + 32, cy + bh - 30); });
+  else { x.fillStyle = '#A3A9B3'; x.font = `400 40px ${B_}`; x.fillText('Add your stats on Next Level', 80, y + 60); }
+  // footer
+  x.fillStyle = '#22A6FF'; x.fillRect(0, H - 220, W, 6);
+  x.fillStyle = '#ECEEF1'; fit('SEE MY CARD ON NEXT LEVEL', 600, 72, D_, W - 160, 36); x.fillText('SEE MY CARD ON NEXT LEVEL', 80, H - 110);
+  x.fillStyle = '#A3A9B3'; fit(location.host + '/a/' + u.id, 400, 38, B_, W - 160, 22); x.fillText(location.host + '/a/' + u.id, 80, H - 56);
+  return new Promise(ok => c.toBlob(ok, 'image/png'));
+}
 function need(fn) { if (!ME()) { authSheet('up'); return; } return fn(); }
 async function logout() { try { await api('/api/logout', {}); } catch (e) {} S.token = null; store.set(null); await refresh().catch(() => {}); go(''); toast('Logged out'); }
 function toggleBlock(id) {
