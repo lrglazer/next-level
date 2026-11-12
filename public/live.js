@@ -165,7 +165,8 @@
       <label class="fl">Email<input name="email" type="email" autocomplete="email" required></label>
       <label class="fl">Password<input name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="8+ characters"></label>
       <label class="chk"><input type="checkbox" name="terms"> I agree to the Terms and Community Guidelines</label>
-      <p class="aerr" id="ae" hidden></p><button class="btn pri">Create account</button>
+      <p class="note" style="margin:0;font-size:12px">By joining you agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. Next Level is a marketplace, not an agent.</p>
+<p class="aerr" id="ae" hidden></p><button class="btn pri">Create account</button>
       <p style="margin:0;font-size:13px">Have an account? <button type="button" class="alink" id="sw">Sign in</button></p></form>`);
     d.querySelectorAll('[data-role]').forEach(b => b.onclick = () => authSheet('signup', b.dataset.role));
     d.querySelector('#sw').onclick = () => authSheet(mode === 'login' ? 'signup' : 'login');
