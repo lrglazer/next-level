@@ -367,7 +367,7 @@ function landing() {
     <div class="acts"><a class="btn ghost sm hide-sm" href="#/news">News</a><a class="btn ghost sm hide-sm" href="#/athletes">Browse athletes</a><button class="btn ghost sm" data-act="signin">Log in</button><button class="btn pri sm" data-act="join">Join free</button></div></header>
   <section class="hero">${field('Volleyball', 'herofield', 'xMaxYMid meet')}<div class="in2 herogrid"><div>
     <h1>Get recruited.<br>Get paid.<br>Do it right.</h1>
-    <p>Varsy is where college athletes build a stat card coaches trust, and land NIL deals with compliance checks built into every offer.</p>
+    <p>Varsy is the social app for athletes. Post your highlights and results, get found by coaches, and land NIL deals with compliance checks built into every offer.</p>
     <div class="row wrap"><button class="btn pri lg" data-act="join" data-role="athlete">I’m a college athlete · Free</button><button class="btn lg" data-act="join" data-role="brand">I’m a brand</button><button class="btn lg" data-act="join" data-role="coach">I’m a coach</button></div>
     <div class="freeline">${ic('check')}<span><b>Free for athletes. Always.</b> No cost to join, and Varsy never takes a cut of your NIL pay.</span></div></div>
     <figure class="demo" aria-label="Example athlete card">
