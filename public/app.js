@@ -360,12 +360,12 @@ function viewFor(r) {
 const notFound = () => ({ title: 'Not found', html: `<div class="page narrow"><h1 class="sr">Page not found</h1>${empty('compass', 'This page doesn’t exist', 'The link may be old or the account may have been deleted.', '<a class="btn" href="#/home">Go home</a>')}</div>` });
 
 // Who's on Varsy right now, for signed-out visitors. Real counts only; until the community is big enough
-// to be worth showing, the band invites people to be early instead of showing small numbers.
+// to be worth showing (200 athletes), the band invites people to be early instead of showing small numbers.
 function liveBand() {
   const us = (D() && D().users) || [], n = r => us.filter(u => u.role === r).length;
   const schools = new Set(us.filter(u => u.sch && (u.role === 'athlete' || u.role === 'coach')).map(u => schoolKey(u.sch))).size;
   const total = n('athlete') + n('coach') + n('brand') + n('fan');
-  if (total < 25) return `<section class="live"><div class="in2"><span class="dot"></span><b>Founding season.</b><span class="muted">Varsy just launched. Be one of the first athletes, coaches and brands here.</span><button class="btn pri sm" data-act="join" data-role="athlete">Join free</button></div></section>`;
+  if (n('athlete') < 200) return `<section class="live"><div class="in2"><span class="dot"></span><b>Founding season.</b><span class="muted">Varsy just launched. Be one of the first athletes, coaches and brands here.</span><button class="btn pri sm" data-act="join" data-role="athlete">Join free</button></div></section>`;
   const cell = (v, l) => v ? `<div><b>${compact(v)}</b><span>${l}</span></div>` : '';
   return `<section class="live"><div class="in2"><span class="dot"></span><b>On Varsy now</b><div class="livenums">${cell(n('athlete'), 'athletes')}${cell(n('coach'), 'coaches')}${cell(n('brand'), 'brands')}${cell(schools, 'schools')}</div></div></section>`;
 }
