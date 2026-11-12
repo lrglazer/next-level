@@ -886,7 +886,7 @@ function athleteDeals() {
   }
   return { title: 'Deals', html: `<div class="page narrow">
     <div class="ph"><div><h1 class="h1">Your deals</h1></div>${mine.length ? `<button class="btn" data-act="csvdeals">${ic('upload')}Export earnings</button>` : ''}</div>
-    <div class="stats4" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px">
+    <div class="stats3" style="margin-bottom:16px">
       <div class="card stat"><b style="color:var(--yellow)">${money(sets.done.reduce((t, o) => t + o.amt, 0))}</b><span>Earned</span></div>
       <div class="card stat"><b>${money(sets.active.reduce((t, o) => t + o.amt, 0))}</b><span>In progress</span></div>
       <div class="card stat"><b>${sets.done.length}</b><span>Completed</span></div></div>

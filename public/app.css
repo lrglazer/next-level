@@ -536,3 +536,6 @@ a.schl { color: inherit; } a.schl:hover { color: var(--blue); }
 .sch-hero .fieldart { -webkit-mask-image: linear-gradient(90deg, transparent 0 40%, #000 75%); mask-image: linear-gradient(90deg, transparent 0 40%, #000 75%); }
 .who .sub { display: block; }
 a.card.deal > .row > svg { width: 20px; height: 20px; flex: none; color: var(--t3); }
+@media (max-width: 600px) { .stats4 .stat b { font-size: 30px; } .stat b { white-space: nowrap; } }
+.stat { min-width: 0; } .stat b { overflow: hidden; text-overflow: clip; }
+.stats3 { display: flex; flex-wrap: wrap; gap: 12px; } .stats3 > .stat { flex: 1 1 auto; min-width: 96px; } .stats3 .stat b { white-space: nowrap; overflow: visible; }

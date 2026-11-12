@@ -33,3 +33,7 @@ Set `ADMIN_EMAILS` (comma-separated) in the service's Environment to turn on the
 ## Before real money moves
 
 Have a sports lawyer review `lib/rules.js`, `public/terms.html` and `public/privacy.html`, then add Stripe Connect to hold brand payments until a post goes live.
+
+## Testing
+
+`node test.js` runs the API tests. Browser checks live in `tests/browser` (see its README).
