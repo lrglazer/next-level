@@ -544,14 +544,22 @@ function home() {
   if (me && tab === 'following') posts = posts.filter(p => d.following.includes(p.by) || p.by === me.id);
   const sports = [...new Set(d.posts.map(p => p.sport).filter(Boolean))].sort();
   if (S.ui.fsp) posts = posts.filter(p => p.sport === S.ui.fsp);
-  const head = `<div class="ph"><div>"<h1 class="h1">${me && me.role !== 'team' ? 'Hey, ' + esc(me.f) : 'The Locker'}</h1></div>
+  const head = `<div class="ph"><div><h1 class="h1">${me && me.role !== 'team' ? 'Hey, ' + esc(me.f) : 'The Locker'}</h1></div>
     ${me && (me.role === 'athlete' || me.role === 'team') ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : me && me.role === 'coach' ? `<button class="btn pri" data-act="composenews">${ic('plus')}Post news</button>` : ''}</div>`;
   const tabs = (me ? `<div class="tabs" role="tablist"><button role="tab" aria-selected="${tab === 'all'}" data-act="feed" data-v="all">Everyone</button><button role="tab" aria-selected="${tab === 'following'}" data-act="feed" data-v="following">Following</button></div>` : '')
     + (sports.length > 1 ? `<div class="row wrap" style="margin:-4px 0 4px">${['', ...sports].map(x => `<button class="chip" data-act="fsp" data-v="${esc(x)}" aria-pressed="${(S.ui.fsp || '') === x}">${esc(x || 'All sports')}</button>`).join('')}</div>` : '');
   const feed = posts.length ? posts.slice(0, 60).map(postCard).join('') :
     `<div class="card">${tab === 'following' ? empty('users', 'Nothing from people you follow yet', 'Follow athletes to see their highlights and game days here.', '<a class="btn" href="#/athletes">Find athletes</a>')
       : empty('image', 'No posts yet', me && me.role === 'athlete' ? 'Be the first. Share a highlight, a game day or a training session.' : 'When athletes share highlights and game days, they’ll show up here.', me && me.role === 'athlete' ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : '<a class="btn" href="#/athletes">Browse athletes</a>')}</div>`;
-  return { title: 'Home', html: `<div class="page">${head}<div class="cols"><div class="stack">${tabs}${feed}</div><aside>${newsStrip()}${homeAside()}</aside></div></div>` };
+  return { title: 'Home', html: `<div class="page">${head}<div class="cols"><div class="stack">${rail()}${tabs}${feed}</div><aside>${newsStrip()}${homeAside()}</aside></div></div>` };
+}
+// Athletes to watch: a swipeable row of faces, like stories. Verified, complete profiles first.
+function rail() {
+  const me = ME(), list = athletes().filter(u => !me || u.id !== me.id)
+    .sort((a, b) => (b.verified - a.verified) || (!!b.av - !!a.av) || completeness(b) - completeness(a) || b.created - a.created).slice(0, 14);
+  if (list.length < 3) return '';
+  return `<section class="rail" aria-label="Athletes to watch"><div class="rail-h"><h2 class="h3">Athletes to watch</h2><a class="small" href="#/athletes">See all</a></div>
+    <div class="rail-row">${list.map(u => `<a class="rail-i" href="#/u/${u.id}"><span class="ring${u.verified ? ' vfd' : ''}">${avatar(u, 'lg')}</span><b>${esc(u.f)}</b><span>${esc(u.sp || '')}</span></a>`).join('')}</div></section>`;
 }
 function profileTodo(me) {
   const posts = D().posts.filter(p => p.by === me.id).length;
@@ -687,7 +695,8 @@ function profile(id) {
     acts.push(`<a class="btn" href="#/messages/new/${u.id}" data-need="1">${ic('msg')}Message</a>`);
   }
   acts.push(`<button class="btn icon" data-act="profmenu" data-id="${u.id}" aria-label="More">${ic('more')}</button>`);
-  const counts = `<div class="row wrap small muted" style="gap:16px;margin-top:10px"><span><b style="color:var(--t)">${u.fol}</b> followers</span><span><b style="color:var(--t)">${u.fing}</b> following</span>${u.role === 'athlete' ? `<span><b style="color:var(--t)">${posts.length}</b> posts</span>` : ''}${u.role === 'athlete' && u.deals ? `<span><b style="color:var(--t)">${u.deals}</b> NIL ${u.deals === 1 ? 'deal' : 'deals'}</span>` : ''}</div>`;
+  const cnt = [[posts.length, posts.length === 1 ? 'Post' : 'Posts', u.role === 'athlete' || u.role === 'team'], [u.fol, u.fol === 1 ? 'Follower' : 'Followers', true], [u.fing, 'Following', true], [u.deals, u.deals === 1 ? 'NIL deal' : 'NIL deals', u.role === 'athlete' && u.deals]].filter(x => x[2]);
+  const counts = `<div class="pcounts">${cnt.map(([n, l]) => `<div><b>${compact(n || 0)}</b><span>${l}</span></div>`).join('')}</div>`;
   const header = `<section class="card prof prof-${u.role}"><div class="ban">${field(u.role === 'brand' ? '' : u.sp)}<div class="line"></div></div>
     <div class="body"><div class="idrow">${avatar(u, 'xl')}<div class="acts">${acts.join('')}</div></div>
     <h1><span class="plate">${u.role === 'athlete' && u.num ? `<span class="num">${esc(u.num)}</span>` : ''}<span class="nmtxt">${esc(nameOf(u))}</span></span>${u.verified ? VF : ''}</h1>

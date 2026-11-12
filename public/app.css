@@ -573,3 +573,92 @@ input[type=range] { accent-color: var(--blue); height: 28px; }
 /* the official Next Level account wears the logo instead of initials */
 .av.team { background: #0B0C0E; border-color: rgba(34, 166, 255, .45); }
 .av.team svg { width: 64%; height: 64%; }
+
+/* ---------- polish: softer geometry, pill controls, photo-first posts ----------
+   Rounder surfaces and pill controls read as a modern social app; the broadcast type and signal colors stay. */
+:root { --r: 12px; --r-lg: 22px; --edge: rgba(255, 255, 255, .06); }
+.card { border-color: var(--edge); box-shadow: 0 1px 0 rgba(255, 255, 255, .03) inset, 0 10px 30px rgba(0, 0, 0, .25); }
+.card-h { border-bottom-color: var(--edge); padding: 16px 20px; }
+.card-b { padding: 20px; }
+.list > * + * { border-top-color: var(--edge); }
+.btn { border-radius: 999px; height: 40px; padding: 0 18px; border-color: var(--edge); background: var(--s2); }
+.btn.sm { height: 34px; padding: 0 14px; }
+.btn.lg { height: 50px; padding: 0 26px; }
+.btn.icon { width: 40px; padding: 0; }
+.btn.sm.icon { width: 34px; }
+.btn.pri { box-shadow: 0 6px 20px rgba(34, 166, 255, .28); }
+.btn.ghost { border-color: transparent; background: none; }
+.in { height: 44px; border-radius: 14px; border-color: var(--line); background: var(--s1); padding: 0 14px; }
+textarea.in { padding: 12px 14px; }
+.top .search input { border-radius: 999px; height: 40px; background: var(--s1); border-color: var(--edge); }
+.tag { border-radius: 999px; height: 24px; padding: 0 10px; }
+.chip { height: 32px; padding: 0 14px; font-size: 13px; border-color: var(--edge); background: var(--s1); }
+.note { border-radius: 16px; border-color: var(--edge); padding: 14px 16px; }
+.pop { border-radius: 18px; border-color: var(--edge); }
+.pop .mi { border-radius: 12px; height: 40px; }
+.sheet { border-radius: 26px; border-color: var(--edge); }
+.sheet-h, .sheet-f { border-color: var(--edge); }
+.nav { height: 44px; border-radius: 14px; }
+.nav.on { background: var(--s2); box-shadow: none; }
+.nav.on svg { color: var(--blue); }
+.side { border-right-color: var(--edge); }
+.top { border-bottom-color: var(--edge); }
+.tabs { border-bottom: 0; gap: 6px; padding: 4px; background: var(--s1); border-radius: 999px; width: max-content; max-width: 100%; border: 1px solid var(--edge); }
+.tabs button { height: 36px; padding: 0 16px; border-radius: 999px; }
+.tabs button[aria-selected="true"] { background: var(--s3); }
+.tabs button[aria-selected="true"]::after { display: none; }
+
+/* posts: photo inset in the card with its own rounding, actions as pills */
+.post .ph2 { padding: 16px 18px 12px; }
+.post .media { margin: 0 12px; width: calc(100% - 24px); border: 0; border-radius: 18px; overflow: hidden; background: #000; }
+.post .media img { max-height: 680px; }
+.post .bd { padding: 14px 18px 8px; }
+.post .cap { font-size: 15px; line-height: 1.55; }
+.post .ft { padding: 8px 14px 14px; gap: 6px; }
+.prop { height: 34px; padding: 0 12px; border-color: var(--edge); background: var(--s2); }
+.cmts { border-top-color: var(--edge); padding: 12px 18px 16px; }
+.post .nb { margin: 0 12px; border-radius: 18px; overflow: hidden; }
+
+/* athletes to watch, like stories */
+.rail { display: grid; gap: 12px; }
+.rail-h { display: flex; align-items: baseline; justify-content: space-between; }
+.rail-h .h3 { font-weight: 600; }
+.rail-row { display: flex; gap: 14px; overflow-x: auto; padding: 2px 2px 6px; scroll-snap-type: x proximity; scrollbar-width: none; }
+.rail-row::-webkit-scrollbar { display: none; }
+.rail-i { flex: none; width: 84px; display: grid; justify-items: center; gap: 2px; text-align: center; color: var(--t); text-decoration: none !important; scroll-snap-align: start; }
+.rail-i .ring { padding: 3px; border-radius: 50%; background: var(--line2); margin-bottom: 6px; transition: transform .15s; }
+.rail-i .ring.vfd { background: conic-gradient(from 200deg, var(--blue), var(--yellow), var(--blue)); }
+.rail-i .ring .av { border: 3px solid var(--bg); width: 70px; height: 70px; }
+.rail-i:hover .ring { transform: scale(1.04); }
+.rail-i b { font-size: 13px; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-i span:last-child { font-size: 11px; color: var(--t3); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* profile: ringed photo and a big count row */
+.prof .ban { height: 168px; border-bottom: 0; }
+.prof .ban .line { height: 2px; opacity: .8; }
+.prof .body { padding: 0 24px 24px; }
+.prof .idrow { margin-top: -60px; }
+.prof .av.xl { width: 120px; height: 120px; border: 4px solid var(--s1); box-shadow: 0 0 0 2px var(--blue), 0 12px 30px rgba(0, 0, 0, .45); }
+.prof .av.xl.sq { border-radius: 28px; }
+.pcounts { display: flex; gap: 28px; margin-top: 18px; flex-wrap: wrap; }
+.pcounts div { display: grid; gap: 2px; }
+.pcounts b { font: 600 32px/.9 var(--f-d); color: var(--t); padding-top: 2px; }
+.pcounts span { font-size: 12px; color: var(--t3); }
+.prof .bigstats { border-radius: 18px; border-color: var(--edge); background: var(--edge); }
+.pgrid { gap: 6px; }
+.pgrid a { border-radius: 14px; }
+.acard { border-color: var(--edge); }
+
+/* phones: a floating pill tab bar */
+@media (max-width: 900px) {
+  .tabbar { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); height: var(--tab); padding-bottom: 0; border-radius: 26px;
+    border: 1px solid var(--line2); background: rgba(18, 20, 24, .88); box-shadow: 0 14px 40px rgba(0, 0, 0, .55); }
+  .main { padding-bottom: calc(var(--tab) + 48px + env(safe-area-inset-bottom)); }
+  .tabbar a.on::before { content: ""; position: absolute; top: 8px; width: 40px; height: 32px; border-radius: 12px; background: var(--blue-d); }
+  .tabbar a svg, .tabbar a span { position: relative; }
+  .prof .body { padding: 0 18px 20px; }
+  .prof .av.xl { width: 104px; height: 104px; }
+  .pcounts { gap: 22px; }
+}
+.prof .bigstats { background: none; border: 0; gap: 8px; }
+.prof .bigstats > div { background: var(--s2); border: 1px solid var(--edge); border-radius: 16px; }
