@@ -570,3 +570,6 @@ input[type=range] { accent-color: var(--blue); height: 28px; }
 .freeline svg { width: 18px; height: 18px; flex: none; margin-top: 2px; color: var(--green); }
 .freeline b { color: var(--t); font-weight: 500; }
 .freeline.sm { margin: 0; padding: 10px 12px; border-radius: var(--r); background: var(--green-d); font-size: 13px; }
+/* the official Next Level account wears the logo instead of initials */
+.av.team { background: #0B0C0E; border-color: rgba(34, 166, 255, .45); }
+.av.team svg { width: 64%; height: 64%; }

@@ -21,6 +21,8 @@ const TYPES = ['Highlight', 'Game day', 'Training log', 'Behind the scenes', 'NI
 // News is the subset of posts with a headline: who committed or signed where, final scores, awards.
 const NEWS = ['Commitment', 'Signing', 'Transfer', 'Result', 'Award', 'Program news'];
 const ATHLETE_TYPES = TYPES, COACH_TYPES = ['Result', 'Program news', 'Award'];
+// The official Next Level account (role 'team') posts announcements, athlete spotlights and how-to guides.
+const TEAM_TYPES = ['Announcement', 'Spotlight', 'Guide'];
 const PROPS = ['clutch', 'locked', 'goat'];
 const STAGES = ['Watching', 'Evaluating', 'Offered', 'Committed'];
 const httpsUrl = (v) => { const s = str(v, 200); return /^https:\/\/[^\s]+\.[^\s]+$/i.test(s) ? s : ''; };
@@ -118,7 +120,7 @@ function sync(viewer) {
     board: viewer && viewer.role === 'coach' ? D.boards.filter(b => b.by === viewer.id && userById(b.athlete)).map(b => ({ athlete: b.athlete, stage: b.stage, note: b.note || '', at: b.at })) : [],
     notes: viewer ? notesFor(viewer) : [],
     admin: isAdmin(viewer) ? adminOut() : null,
-    rules: { BANNED, CATS, DELIVERABLES, TYPES: ATHLETE_TYPES, COACH_TYPES, NEWS, STAGES }
+    rules: { BANNED, CATS, DELIVERABLES, TYPES: ATHLETE_TYPES, COACH_TYPES, TEAM_TYPES, NEWS, STAGES }
   };
 }
 // The owner's moderation queue: reports, and athletes and coaches waiting to be verified.
@@ -273,15 +275,15 @@ const routes = {
 
   'POST /api/posts': { auth: true, fn: async (b, ctx) => {
     const u = ctx.user;
-    if (u.role !== 'athlete' && u.role !== 'coach') throw err(403, 'Only athlete and coach accounts can post.');
+    if (!['athlete', 'coach', 'team'].includes(u.role)) throw err(403, 'Only athlete and coach accounts can post.');
     limit('post:' + u.id, 6, 600e3); daily(u, 'post', 30);
-    const allowed = u.role === 'coach' ? COACH_TYPES : ATHLETE_TYPES;
-    const cap = str(b.cap, 600), type = allowed.includes(b.type) ? b.type : (u.role === 'coach' ? 'Program news' : 'Highlight');
+    const team = u.role === 'team', allowed = team ? TEAM_TYPES : u.role === 'coach' ? COACH_TYPES : ATHLETE_TYPES;
+    const cap = str(b.cap, 600), type = allowed.includes(b.type) ? b.type : (team ? 'Announcement' : u.role === 'coach' ? 'Program news' : 'Highlight');
     const news = newsFields(type, b.news || {}, u);
     if (!b.img && !cap && !news) throw err(400, 'Add a photo or write a caption first.');
     if (!clean(cap) || (news && !clean(Object.values(news).join(' ')))) throw err(400, 'Keep it respectful. That post can’t be shared.');
-    const p = { id: db.nextId(), by: u.id, type, sport: u.sp || 'Other', season: str(b.season, 20) || new Date().getFullYear() + ' season',
-      tag: str(b.tag, 60), pr: str(b.pr, 60), partner: type === 'NIL partner' ? str(b.partner, 60) : '', cap: cap || '—', img: b.img ? db.saveMedia(b.img) : null, news, at: Date.now() };
+    const p = { id: db.nextId(), by: u.id, type, sport: team ? '' : u.sp || 'Other', season: team ? '' : str(b.season, 20) || new Date().getFullYear() + ' season',
+      tag: team ? '' : str(b.tag, 60), pr: str(b.pr, 60), partner: type === 'NIL partner' ? str(b.partner, 60) : '', cap: cap || '—', img: b.img ? db.saveMedia(b.img) : null, news, at: Date.now() };
     D.posts.push(p); db.touch('posts');
     return { post: postOut(p, u) };
   } },
@@ -506,6 +508,21 @@ const routes = {
     if (isAdmin(u)) throw err(400, 'Owner accounts can’t be removed here.');
     db.deleteUser(u); D.reports = D.reports.filter(r => !(r.kind === 'user' && r.id === u.id)); db.touch('reports');
     return sync(ctx.user);
+  } },
+  // Turns the owner's own login into the official Next Level account: personal details, posts and follows are removed,
+  // the login and admin access stay. Can't be undone from the app.
+  'POST /api/admin/official': { auth: true, fn: async (b, ctx) => {
+    const u = ctx.user;
+    if (!isAdmin(u)) throw err(403, 'Admins only.');
+    if (!db.checkLogin(u.email, b.password)) throw err(401, 'Enter your password to confirm.');
+    const old = new Set(D.posts.filter(p => p.by === u.id).map(p => p.id));
+    D.posts = D.posts.filter(p => !old.has(p.id)); D.props = D.props.filter(x => !old.has(x.post)); D.comments = D.comments.filter(c => !old.has(c.post));
+    D.follows = D.follows.filter(f => f.by !== u.id && f.to !== u.id);
+    for (const k of ['sch', 'sp', 'pos', 'yr', 'st', 'num', 'ht', 'wt', 'home', 'grad', 'gpa', 'major', 'hl', 'title', 'div', 'av']) u[k] = '';
+    Object.assign(u, { role: 'team', f: 'Next', l: 'Level', verified: true, stats: [], meas: [], awards: [], soc: {}, rate: null, open: [], brand: null, pin: null, portal: false, appear: null, open4: false,
+      bio: str(b.bio, 600) || 'The official Next Level account. The social app for college athletes: profiles, recruiting, news and NIL deals checked against the rules. Free for athletes, always.' });
+    ['users', 'posts', 'props', 'comments', 'follows'].forEach(c => db.touch(c));
+    return sync(u);
   } },
   'POST /api/admin/verify': { auth: true, fn: async (b, ctx) => {
     if (!isAdmin(ctx.user)) throw err(403, 'Admins only.');

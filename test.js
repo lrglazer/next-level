@@ -238,6 +238,17 @@ server.listen(0, async () => {
     ok((await call('/api/posts', { type: 'Program news', news: { headline: 'Spring schedule released' } }, C2)).s === 200, 'program news');
     ok((await call('/api/posts', { type: 'Result', news: { opp: 'x', us: 1, them: 2 } }, B.token)).s === 403, 'brands cannot post');
 
+    // --- official Next Level account
+    ok((await call('/api/admin/official', { password: 'password123' }, A.token)).s === 403, 'official: admins only');
+    ok((await call('/api/admin/official', { password: 'wrong' }, O.token)).s === 401, 'official: needs password');
+    let ofc = await call('/api/admin/official', { password: 'password123' }, O.token);
+    ok(ofc.s === 200 && ofc.j.me.role === 'team' && ofc.j.me.f === "Next" && ofc.j.me.l === "Level" && ofc.j.me.verified && ofc.j.me.admin, 'official: converted, keeps admin');
+    ok(!ofc.j.posts.some(p => p.by === O.me.id), 'official: old posts removed');
+    let tp = await call('/api/posts', { type: 'Announcement', cap: 'Welcome to Next Level.' }, O.token);
+    ok(tp.s === 200 && tp.j.post.type === 'Announcement' && tp.j.post.sport === '' && tp.j.post.season === '', 'official: can post announcements');
+    ok((await call('/api/posts', { type: 'Commitment', cap: 'x', news: { school: 'UT' } }, O.token)).j.post.type === 'Announcement', 'official: athlete types fall back');
+    ok((await call('/api/login', { email: 'owner@test.dev', password: 'password123' }, null, '5.5.5.5')).s === 200, 'official: same login works');
+
     // --- delete account
     ok((await call('/api/delete-account', { password: 'wrong' }, F.token)).s === 401, 'delete needs password');
     ok((await call('/api/delete-account', { password: 'password123' }, F.token)).s === 200, 'delete');

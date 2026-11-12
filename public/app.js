@@ -50,7 +50,7 @@ const STAT_HINTS = {
 };
 const MEAS_HINTS = ['40-yard dash', 'Vertical', 'Broad jump', 'Wingspan', 'Bench', 'Squat', 'Pro shuttle', 'Exit velo', 'Fastball'];
 const PROPS = [['clutch', 'Clutch'], ['locked', 'Locked in'], ['goat', 'GOAT']];
-const ROLE_NAME = { athlete: 'College athlete', coach: 'Coach', brand: 'Brand', fan: 'Fan' };
+const ROLE_NAME = { athlete: 'College athlete', coach: 'Coach', brand: 'Brand', fan: 'Fan', team: 'Official account' };
 const SUPPORT = 'leya.glazer@utdallas.edu';
 
 // ---------------------------------------------------------------- icons
@@ -157,6 +157,7 @@ const subline = u => {
   if (u.role === 'athlete') return [u.sp, u.pos, u.yr].filter(Boolean).join(' · ');
   if (u.role === 'coach') return [u.title || 'Coach', u.sp].filter(Boolean).join(' · ');
   if (u.role === 'brand') return (u.brand && u.brand.cat) || 'Brand';
+  if (u.role === 'team') return 'Official account';
   return 'Fan';
 };
 const schoolLine = u => !u ? '' : [u.sch, u.st].filter(Boolean).join(', ');
@@ -169,7 +170,8 @@ const boardRow = id => (S.data.board || []).find(b => b.athlete === +id);
 const following = id => S.data.following.includes(+id);
 
 function avatar(u, size) {
-  const c = 'av' + (size ? ' ' + size : '') + (u && u.role === 'brand' ? ' sq' : '');
+  const c = 'av' + (size ? ' ' + size : '') + (u && u.role === 'brand' ? ' sq' : '') + (u && u.role === 'team' ? ' team' : '');
+  if (u && u.role === 'team') return `<span class="${c}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16 12 9l8 7" fill="none" stroke="#22A6FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="m7 10.5 5-4.5 5 4.5" fill="none" stroke="#FFE500" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
   return `<span class="${c}">${u && u.av ? `<img src="${esc(u.av)}" alt="" loading="lazy">` : esc(initials(u))}</span>`;
 }
 function who(u, opts = {}) {
@@ -314,7 +316,7 @@ function render() {
       <form class="search" data-form="topsearch" role="search">${ic('search')}<input class="in" name="q" placeholder="Search athletes, schools, sports" aria-label="Search athletes" value="${esc(S.ui.f.q)}"></form>
       <div class="acts">${me ? `
         <a class="iconbtn" href="#/notifications" aria-label="Notifications">${ic('bell')}${hotNotes() ? `<span class="badge">${hotNotes()}</span>` : ''}</a>
-        <button class="menubtn" data-act="acct" aria-label="Account menu">${avatar(me, 'xs')}<span class="nm">${esc(me.role === 'brand' ? nameOf(me) : me.f)}</span></button>`
+        <button class="menubtn" data-act="acct" aria-label="Account menu">${avatar(me, 'xs')}<span class="nm">${esc(me.role === 'brand' || me.role === 'team' ? nameOf(me) : me.f)}</span></button>`
         : `<button class="btn ghost sm" data-act="signin">Log in</button><button class="btn pri sm" data-act="join">Join free</button>`}</div>
     </header>`;
   const side = me ? `<nav class="side" aria-label="Main">
@@ -472,7 +474,7 @@ function postCard(p) {
     ${p.img ? `<button class="media" data-act="zoom" data-src="${esc(p.img)}" aria-label="View photo full size"><img src="${esc(p.img)}" alt="${esc(p.type + ' photo from ' + nameOf(u))}" loading="lazy"></button>` : ''}
     ${p.news ? newsBlock(p, u) : ''}
     <div class="bd">
-      <div class="kicker"><span class="tag ${p.type === 'NIL partner' ? 'yellow' : p.type === 'Game day' ? 'red' : 'blue'}">${esc(p.type)}</span>${p.tag ? `<span class="tag">${esc(p.tag)}</span>` : ''}${p.season ? `<span class="tag">${esc(p.season)}</span>` : ''}</div>
+      <div class="kicker"><span class="tag ${p.type === 'NIL partner' || p.type === 'Spotlight' ? 'yellow' : p.type === 'Game day' ? 'red' : 'blue'}">${esc(p.type)}</span>${p.tag ? `<span class="tag">${esc(p.tag)}</span>` : ''}${p.season ? `<span class="tag">${esc(p.season)}</span>` : ''}</div>
       ${p.cap && p.cap !== '—' ? `<div class="cap">${linkify(p.cap)}</div>` : ''}
       ${p.type === 'NIL partner' ? `<div class="ad">Paid partnership${p.partner ? ' with ' + esc(p.partner) : ''}</div>` : ''}
     </div>
@@ -500,12 +502,12 @@ function newsBlock(p, u) {
   return `<div class="nb nb-${p.type === 'Program news' ? 'prog' : p.type.toLowerCase()}">${field(p.sport, 'mini')}<div class="nb-k">${big}</div><div class="nb-h">${line}</div>${u && u.role === 'athlete' && p.type !== 'Award' ? `<div class="small muted">${esc(nameOf(u))}${[u.sp, u.pos].filter(Boolean).length ? ' · ' + esc([u.sp, u.pos].filter(Boolean).join(' · ')) : ''}</div>` : ''}</div>`;
 }
 function composer(preType) {
-  const me = ME(), types = me.role === 'coach' ? D().rules.COACH_TYPES : D().rules.TYPES;
+  const me = ME(), team = me.role === 'team', types = team ? D().rules.TEAM_TYPES : me.role === 'coach' ? D().rules.COACH_TYPES : D().rules.TYPES;
   const s = sheet(me.role === 'coach' ? 'Post news' : 'New post', `<form class="stack" data-form="post" novalidate>
     <input type="file" accept="image/jpeg,image/png,image/webp" id="pfile" hidden>
     <div id="pdrop"><label class="drop" for="pfile">${ic('image')}<span><b style="color:var(--t);font-weight:500">Add a photo</b><br><span class="small">JPG, PNG or WebP. Optional for text posts.</span></span></label></div>
     <div class="grid2"><label class="field"><span>Type</span><select class="in" name="type">${types.map(t => `<option ${t === preType ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
-      <label class="field"><span>Season</span><input class="in" name="season" maxlength="20" value="${new Date().getFullYear()} season"></label></div>
+      ${team ? '' : `<label class="field"><span>Season</span><input class="in" name="season" maxlength="20" value="${new Date().getFullYear()} season"></label>`}</div>
     <div class="stack" data-news="Commitment Signing Transfer" hidden>
       <label class="field" data-news="Transfer" hidden><span>Transferring from</span><input class="in" name="n_from" maxlength="60" value="${esc(me.sch)}"></label>
       <label class="field"><span data-schoollabel>School</span><input class="in" name="n_school" maxlength="60" placeholder="e.g. Baylor University"></label></div>
@@ -516,15 +518,15 @@ function composer(preType) {
       <div class="grid3"><label class="field"><span>Your score</span><input class="in" name="n_us" inputmode="numeric" maxlength="3"></label><label class="field"><span>Their score</span><input class="in" name="n_them" inputmode="numeric" maxlength="3"></label><label class="field"><span>Event <small>(optional)</small></span><input class="in" name="n_event" maxlength="60" placeholder="Conference"></label></div></div>
     ${me.role === 'athlete' ? `<p class="small dim" data-news="Commitment Signing Transfer" hidden style="margin:0">Only announce once it’s official and you’re ready to share it. Coaches can’t post about recruits before they sign.</p>` : ''}
     <label class="field" data-partner hidden><span>Brand partner</span><input class="in" name="partner" maxlength="60" placeholder="Who is this partnership with?"><small>Next Level labels this post as a paid partnership, as the FTC requires.</small></label>
-    <label class="field"><span>Opponent or event <small>(optional)</small></span><input class="in" name="tag" maxlength="60" placeholder="e.g. vs. Baylor · Big 12 Championships"></label>
-    <label class="field"><span>Caption</span><textarea class="in" name="cap" maxlength="600" rows="4" placeholder="What happened?"></textarea></label>
+    <label class="field"${team ? ' hidden' : ''}><span>Opponent or event <small>(optional)</small></span><input class="in" name="tag" maxlength="60" placeholder="e.g. vs. Baylor · Big 12 Championships"></label>
+    <label class="field"><span>Caption</span><textarea class="in" name="cap" maxlength="600" rows="${team ? 7 : 4}" placeholder="${team ? 'What do you want everyone on Next Level to know?' : 'What happened?'}"></textarea></label>
     <p class="err" hidden></p></form>`, `<button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="sendpost">Post</button>`);
   const f = s.querySelector('form'), type = f.type, part = s.querySelector('[data-partner]');
   const sync = () => { const t = type.value; part.hidden = t !== 'NIL partner';
     s.querySelectorAll('[data-news]').forEach(el => { el.hidden = !el.dataset.news.split(' ').includes(t) && !(el.dataset.news === 'Commitment Signing Transfer' && ['Commitment', 'Signing', 'Transfer'].includes(t)); });
     s.querySelectorAll('[data-news="Transfer"]').forEach(el => { el.hidden = t !== 'Transfer'; });
     const sl = s.querySelector('[data-schoollabel]'); if (sl) sl.textContent = t === 'Commitment' ? 'Committed to' : t === 'Signing' ? 'Signed with' : 'Transferring to';
-    s.querySelector('[name=tag]').closest('label').hidden = ['Result', 'Program news'].includes(t); };
+    s.querySelector('[name=tag]').closest('label').hidden = team || ['Result', 'Program news'].includes(t); };
   type.onchange = sync; sync();
   s.querySelector('#pfile').onchange = async e => {
     const file = e.target.files[0]; if (!file) return;
@@ -542,8 +544,8 @@ function home() {
   if (me && tab === 'following') posts = posts.filter(p => d.following.includes(p.by) || p.by === me.id);
   const sports = [...new Set(d.posts.map(p => p.sport).filter(Boolean))].sort();
   if (S.ui.fsp) posts = posts.filter(p => p.sport === S.ui.fsp);
-  const head = `<div class="ph"><div><h1 class="h1">${me ? 'Hey, ' + esc(me.f) : 'The Locker'}</h1></div>
-    ${me && me.role === 'athlete' ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : me && me.role === 'coach' ? `<button class="btn pri" data-act="composenews">${ic('plus')}Post news</button>` : ''}</div>`;
+  const head = `<div class="ph"><div>"<h1 class="h1">${me && me.role !== 'team' ? 'Hey, ' + esc(me.f) : 'The Locker'}</h1></div>
+    ${me && (me.role === 'athlete' || me.role === 'team') ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : me && me.role === 'coach' ? `<button class="btn pri" data-act="composenews">${ic('plus')}Post news</button>` : ''}</div>`;
   const tabs = (me ? `<div class="tabs" role="tablist"><button role="tab" aria-selected="${tab === 'all'}" data-act="feed" data-v="all">Everyone</button><button role="tab" aria-selected="${tab === 'following'}" data-act="feed" data-v="following">Following</button></div>` : '')
     + (sports.length > 1 ? `<div class="row wrap" style="margin:-4px 0 4px">${['', ...sports].map(x => `<button class="chip" data-act="fsp" data-v="${esc(x)}" aria-pressed="${(S.ui.fsp || '') === x}">${esc(x || 'All sports')}</button>`).join('')}</div>` : '');
   const feed = posts.length ? posts.slice(0, 60).map(postCard).join('') :
@@ -689,7 +691,7 @@ function profile(id) {
   const header = `<section class="card prof prof-${u.role}"><div class="ban">${field(u.role === 'brand' ? '' : u.sp)}<div class="line"></div></div>
     <div class="body"><div class="idrow">${avatar(u, 'xl')}<div class="acts">${acts.join('')}</div></div>
     <h1><span class="plate">${u.role === 'athlete' && u.num ? `<span class="num">${esc(u.num)}</span>` : ''}<span class="nmtxt">${esc(nameOf(u))}</span></span>${u.verified ? VF : ''}</h1>
-    <div class="line1">${esc(u.role === 'brand' ? (u.brand && u.brand.cat) || 'Brand' : u.role === 'athlete' ? [u.sp, u.pos, u.yr].filter(Boolean).join(' · ') : u.role === 'coach' ? [u.title || 'Coach', u.sp, u.div].filter(Boolean).join(' · ') : 'Fan')}</div>
+    <div class="line1">${esc(u.role === 'brand' ? (u.brand && u.brand.cat) || 'Brand' : u.role === 'athlete' ? [u.sp, u.pos, u.yr].filter(Boolean).join(' · ') : u.role === 'coach' ? [u.title || 'Coach', u.sp, u.div].filter(Boolean).join(' · ') : u.role === 'team' ? 'Official account' : 'Fan')}</div>
     <div class="line2">${u.role === 'brand' ? esc([u.f + ' ' + u.l, u.home, u.st].filter(Boolean).join(' · ')) : (u.sch ? `<a class="schl" href="${schoolHref(u.sch)}">${esc(u.sch)}</a>` : '') + (u.st ? esc((u.sch ? ', ' : '') + u.st) : '')}${u.role === 'brand' && u.brand && u.brand.site ? ` · <a href="${esc(u.brand.site)}" target="_blank" rel="noopener noreferrer">${esc(u.brand.site.replace(/^https:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : ''}</div>
     ${u.portal ? '<div style="margin-top:10px"><span class="tag yellow">In the transfer portal</span></div>' : ''}${counts}<div class="printonly small" style="margin-top:6px">Next Level profile: ${esc(location.origin + '/a/' + u.id)}</div>
     ${u.role === 'athlete' && (u.stats || []).length ? `<div class="bigstats">${u.stats.map(x => `<div><b>${esc(x.v)}</b><span>${esc(x.k)}</span></div>`).join('')}</div>` : ''}
@@ -722,6 +724,9 @@ function profile(id) {
     const camps = D().campaigns.filter(c => c.brand === u.id && !c.closed);
     main = `<div class="sec-h"><h2 class="h2">Open campaigns</h2></div>${camps.length ? `<div class="stack">${camps.map(campCardAthlete).join('')}</div>` : `<div class="card">${empty('brief', 'No open campaigns', mine ? 'Post a campaign and athletes can apply.' : '', mine ? '<a class="btn pri" href="#/campaigns">Post a campaign</a>' : '')}</div>`}`;
     side = u.bio ? `<div class="card"><div class="card-h"><h2 class="h2">About</h2></div><div class="card-b"><p style="margin:0;white-space:pre-wrap">${esc(u.bio)}</p></div></div>` : '';
+  } else if (u.role === 'team') {
+    side = u.bio ? `<div class="card"><div class="card-h"><h2 class="h2">About</h2></div><div class="card-b"><p style="margin:0;white-space:pre-wrap">${esc(u.bio)}</p></div></div>` : '';
+    main = `<div class="sec-h"><h2 class="h2">Posts</h2></div>${posts.length ? `<div class="stack">${posts.map(postCard).join('')}</div>` : `<div class="card">${empty('image', 'No posts yet', mine ? 'Post an announcement, an athlete spotlight or a how-to guide.' : '', mine ? `<button class="btn pri" data-act="compose">${ic('plus')}New post</button>` : '')}</div>`}`;
   } else {
     main = u.bio ? `<div class="card"><div class="card-h"><h2 class="h2">About</h2></div><div class="card-b"><p style="margin:0;white-space:pre-wrap">${esc(u.bio)}</p></div></div>` : `<div class="card">${empty('user', mine ? 'Add a bio' : 'No bio yet', mine ? 'Let athletes know who you are.' : '', mine ? '<a class="btn" href="#/edit">Edit profile</a>' : '')}</div>`;
   }
