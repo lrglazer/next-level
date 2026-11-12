@@ -1,4 +1,4 @@
-# Next Level
+# Varsy
 
 Recruiting and compliant NIL deals for college athletes, coaches, brands and fans.
 

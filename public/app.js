@@ -1,4 +1,4 @@
-// Next Level · the whole front end. Plain JavaScript, no build step.
+// Varsy · the whole front end. Plain JavaScript, no build step.
 // Every screen reads from one copy of the server's data (state.data) and is redrawn from it.
 (function () {
 'use strict';
@@ -132,7 +132,7 @@ async function api(path, body) {
   let r;
   try {
     r = await fetch(path, { method: body ? 'POST' : 'GET', headers: { 'content-type': 'application/json', ...(S.token ? { authorization: 'Bearer ' + S.token } : {}) }, body: body ? JSON.stringify(body) : undefined });
-  } catch (e) { throw new Error('Can’t reach Next Level. Check your connection and try again.'); }
+  } catch (e) { throw new Error('Can’t reach Varsy. Check your connection and try again.'); }
   const j = await r.json().catch(() => ({}));
   if (r.status === 401 && S.token && path !== '/api/login' && path !== '/api/password' && path !== '/api/delete-account') { S.token = null; store.set(null); }
   if (!r.ok) throw new Error(j.error || 'Something went wrong. Try again.');
@@ -146,7 +146,7 @@ const D = () => S.data;
 const ME = () => (S.data && S.data.me) || null;
 const role = () => (ME() ? ME().role : null);
 const user = id => (S.data.users.find(u => u.id === +id) || (ME() && ME().id === +id ? ME() : null));
-const nameOf = u => !u ? 'Deleted account' : (u.role === 'brand' && u.brand && u.brand.name ? u.brand.name : `${u.f} ${u.l}`);
+const nameOf = u => !u ? 'Deleted account' : (u.role === 'brand' && u.brand && u.brand.name ? u.brand.name : `${u.f} ${u.l}`.trim());
 const initials = u => !u ? '?' : (u.role === 'brand' && u.brand && u.brand.name ? u.brand.name.slice(0, 2) : (u.f[0] || '') + (u.l[0] || '')).toUpperCase();
 const athletes = () => S.data.users.filter(u => u.role === 'athlete');
 // How complete a profile is (0-8). Search ranks complete profiles first, as the checklist promises.
@@ -300,19 +300,19 @@ function isOn(href) {
 // ---------------------------------------------------------------- layout
 function render() {
   const app = $('#app');
-  if (!S.data) { app.innerHTML = S.failed ? `<div class="boot"><div class="empty">${ic('alert')}<b>Next Level couldn’t load</b><p>Check your connection, then try again.</p><button class="btn pri" data-act="reload">Try again</button></div></div>` : '<div class="boot"><div class="splash"><span>Next Level</span></div></div>'; return; }
+  if (!S.data) { app.innerHTML = S.failed ? `<div class="boot"><div class="empty">${ic('alert')}<b>Varsy couldn’t load</b><p>Check your connection, then try again.</p><button class="btn pri" data-act="reload">Try again</button></div></div>` : '<div class="boot"><div class="splash"><span>Varsy</span></div></div>'; return; }
   closeMenu();
   const r = route(), me = ME();
   if (!me && (!r.length || r[0] === 'home' || PRIVATE.includes(r[0]))) {
     app.innerHTML = landing();
     if (PRIVATE.includes(r[0])) setTimeout(() => authSheet('in'), 0);
-    document.title = 'Next Level · Recruiting and NIL for college athletes';
+    document.title = 'Varsy · Recruiting and NIL for college athletes';
     return;
   }
   const view = viewFor(r);
   const nav = navItems();
   const top = `<header class="top">
-      <a class="logo" href="#/${me ? 'home' : ''}">${LOGO}<b>Next Level</b></a>
+      <a class="logo" href="#/${me ? 'home' : ''}">${LOGO}<b>Varsy</b></a>
       <form class="search" data-form="topsearch" role="search">${ic('search')}<input class="in" name="q" placeholder="Search athletes, schools, sports" aria-label="Search athletes" value="${esc(S.ui.f.q)}"></form>
       <div class="acts">${me ? `
         <a class="iconbtn" href="#/notifications" aria-label="Notifications">${ic('bell')}${hotNotes() ? `<span class="badge">${hotNotes()}</span>` : ''}</a>
@@ -324,7 +324,7 @@ function render() {
       <a class="nav${isOn('news') ? ' on' : ''}" href="#/news">${ic('flag')}News</a>
       <a class="nav${isOn('notifications') ? ' on' : ''}" href="#/notifications">${ic('bell')}Notifications${hotNotes() ? `<span class="badge">${hotNotes()}</span>` : ''}</a>
       ${me.admin ? `<div class="grp eyebrow">Owner</div><a class="nav${isOn('admin') ? ' on' : ''}" href="#/admin">${ic('shield')}Admin${D().admin && D().admin.pending.length + D().admin.reports.length ? `<span class="badge">${D().admin.pending.length + D().admin.reports.length}</span>` : ''}</a>` : ''}
-      <div class="foot"><span>Next Level is a marketplace, not an agent.</span><span><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:${SUPPORT}">Help</a></span></div>
+      <div class="foot"><span>Varsy is a marketplace, not an agent.</span><span><a href="/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:${SUPPORT}">Help</a></span></div>
     </nav>` : `<nav class="side" aria-label="Main">
       <a class="nav${isOn('athletes') ? ' on' : ''}" href="#/athletes">${ic('compass')}Athletes</a>
       <a class="nav${isOn('news') ? ' on' : ''}" href="#/news">${ic('flag')}News</a>
@@ -332,7 +332,7 @@ function render() {
   const tabbar = me ? `<nav class="tabbar" aria-label="Main">${nav.map(n => `<a class="${isOn(n.href) ? 'on' : ''}" href="#/${n.href}">${ic(n.icon)}${esc(n.short || n.label)}${n.badge ? `<span class="badge">${n.badge}</span>` : ''}</a>`).join('')}</nav>` : '';
   app.innerHTML = `${top}<div class="shell">${side}<main class="main" id="main">${S.cmp.length && route()[0] !== 'compare' ? `<div class="cmptray"><span>${plural(S.cmp.length, 'athlete')} to compare</span><a class="btn pri sm" href="#/compare">Compare</a><button class="btn ghost sm" data-act="cmpclear">Clear</button></div>` : ''}${me && me.tempPw && route()[0] !== 'settings' ? `<div class="note warn" style="max-width:1080px;margin:0 auto 16px">${ic('alert')}<span><b>You’re using a temporary password.</b> <a href="#/settings">Choose a new one</a> to keep your account secure.</span></div>` : ''}${view.html}</main></div>${tabbar}`;
   const un = unreadMsgs() + hotNotes();
-  document.title = (un ? `(${un}) ` : '') + (view.title ? view.title + ' · ' : '') + 'Next Level';
+  document.title = (un ? `(${un}) ` : '') + (view.title ? view.title + ' · ' : '') + 'Varsy';
   if (view.after) view.after();
 }
 
@@ -363,13 +363,13 @@ const notFound = () => ({ title: 'Not found', html: `<div class="page narrow"><h
 function landing() {
   const li = t => `<li>${ic('check')}<span>${t}</span></li>`;
   return `<div class="land">
-  <header class="top"><a class="logo" href="#/">${LOGO}<b>Next Level</b></a>
+  <header class="top"><a class="logo" href="#/">${LOGO}<b>Varsy</b></a>
     <div class="acts"><a class="btn ghost sm hide-sm" href="#/news">News</a><a class="btn ghost sm hide-sm" href="#/athletes">Browse athletes</a><button class="btn ghost sm" data-act="signin">Log in</button><button class="btn pri sm" data-act="join">Join free</button></div></header>
   <section class="hero">${field('Volleyball', 'herofield', 'xMaxYMid meet')}<div class="in2 herogrid"><div>
     <h1>Get recruited.<br>Get paid.<br>Do it right.</h1>
-    <p>Next Level is where college athletes build a stat card coaches trust, and land NIL deals with compliance checks built into every offer.</p>
+    <p>Varsy is where college athletes build a stat card coaches trust, and land NIL deals with compliance checks built into every offer.</p>
     <div class="row wrap"><button class="btn pri lg" data-act="join" data-role="athlete">I’m a college athlete · Free</button><button class="btn lg" data-act="join" data-role="brand">I’m a brand</button><button class="btn lg" data-act="join" data-role="coach">I’m a coach</button></div>
-    <div class="freeline">${ic('check')}<span><b>Free for athletes. Always.</b> No cost to join, and Next Level never takes a cut of your NIL pay.</span></div></div>
+    <div class="freeline">${ic('check')}<span><b>Free for athletes. Always.</b> No cost to join, and Varsy never takes a cut of your NIL pay.</span></div></div>
     <figure class="demo" aria-label="Example athlete card">
       <div class="demo-card">${field('Volleyball', 'mini')}<div class="demo-top"><span class="demo-num">12</span><div><div class="demo-nm">Your name</div><div class="demo-meta">Volleyball · Outside hitter · Jr</div></div></div>
         <div class="strip"><div><b>312</b><span>Kills</span></div><div><b>.287</b><span>Hit %</span></div><div><b>41</b><span>Aces</span></div><div><b>3.8</b><span>GPA</span></div></div>
@@ -396,7 +396,7 @@ function landing() {
   </section>
   <section class="lsec">
     <h2 class="h1">The rules run on every deal.</h2>
-    <p class="muted" style="max-width:620px;margin:14px 0 0">Next Level checks each offer on our server before it can be sent, so athletes and brands stay inside NCAA, school and state NIL rules.</p>
+    <p class="muted" style="max-width:620px;margin:14px 0 0">Varsy checks each offer on our server before it can be sent, so athletes and brands stay inside NCAA, school and state NIL rules.</p>
     <div class="rules">
       <div><b>Enrolled athletes only</b><p>NIL accounts are for current college athletes, 18 and older.</p></div>
       <div><b>Banned categories blocked</b><p>No alcohol, vape, betting, cannabis, firearms or adult brands. Ever.</p></div>
@@ -405,28 +405,28 @@ function landing() {
       <div><b>NIL Go reminders</b><p>Deals of $600 or more come with a reminder to report them.</p></div>
       <div><b>School disclosure</b><p>Athletes are reminded to disclose every deal to their compliance office.</p></div>
     </div>
-    <div class="note" style="margin-top:16px">${ic('info')}<span><b>A marketplace, not an agent.</b> Next Level connects people. We don’t represent anyone, negotiate for anyone, or give legal or tax advice. International students: talk to your school before taking NIL work.</span></div>
+    <div class="note" style="margin-top:16px">${ic('info')}<span><b>A marketplace, not an agent.</b> Varsy connects people. We don’t represent anyone, negotiate for anyone, or give legal or tax advice. International students: talk to your school before taking NIL work.</span></div>
   </section>
   <section class="lsec" style="text-align:center">
     <h2 class="h1">Free for athletes. Always.</h2>
-    <p class="muted" style="margin:14px auto 24px;max-width:520px">No cost to join, no subscription, and Next Level never takes a cut of your NIL pay. Brands and coaches pay for their tools, so you don’t have to.</p>
-    <button class="btn pri lg" data-act="join" data-role="athlete">Join Next Level</button>
+    <p class="muted" style="margin:14px auto 24px;max-width:520px">No cost to join, no subscription, and Varsy never takes a cut of your NIL pay. Brands and coaches pay for their tools, so you don’t have to.</p>
+    <button class="btn pri lg" data-act="join" data-role="athlete">Join Varsy</button>
   </section>
-  <footer class="lfoot"><div class="in2"><span class="logo">${LOGO}<b style="font-size:20px">Next Level</b></span><span>A marketplace, not an agent.</span><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="mailto:${SUPPORT}">Contact</a></div></footer>
+  <footer class="lfoot"><div class="in2"><span class="logo">${LOGO}<b style="font-size:20px">Varsy</b></span><span>A marketplace, not an agent.</span><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="mailto:${SUPPORT}">Contact</a></div></footer>
   </div>`;
 }
 
 // ---------------------------------------------------------------- auth
 function authSheet(mode, preRole) {
   const r0 = preRole || 'athlete';
-  const s = sheet(mode === 'in' ? 'Log in' : 'Join Next Level', `
+  const s = sheet(mode === 'in' ? 'Log in' : 'Join Varsy', `
     <div class="tabs" role="tablist" style="margin-top:-8px"><button role="tab" aria-selected="${mode !== 'in'}" data-mode="up">Create account</button><button role="tab" aria-selected="${mode === 'in'}" data-mode="in">Log in</button></div>
     <form data-form="login" class="stack" ${mode === 'in' ? '' : 'hidden'} novalidate>
       <label class="field"><span>Email</span><input class="in" name="email" type="email" autocomplete="email" required></label>
       <label class="field"><span>Password</span><input class="in" name="password" type="password" autocomplete="current-password" required></label>
       <p class="err" hidden></p>
       <button class="btn pri block lg">Log in</button>
-      <p class="small dim" style="margin:0;text-align:center">Forgot your password? <a href="mailto:${SUPPORT}?subject=Next%20Level%20password%20reset">Email support</a> from the address on your account and we’ll send you a temporary one.</p>
+      <p class="small dim" style="margin:0;text-align:center">Forgot your password? <a href="mailto:${SUPPORT}?subject=Varsy%20password%20reset">Email support</a> from the address on your account and we’ll send you a temporary one.</p>
     </form>
     <form data-form="signup" class="stack" ${mode === 'in' ? 'hidden' : ''} novalidate>
       <div class="field"><span>I’m joining as</span><div class="grid2" role="radiogroup">
@@ -451,7 +451,7 @@ function authSheet(mode, preRole) {
         <label class="check"><input type="checkbox" name="adult"> I’m 18 or older and currently enrolled at the school above.</label>
         <label class="check"><input type="checkbox" name="intl"> I’m an international student (we’ll show you visa reminders on NIL deals).</label>
       </div>
-      <label class="check"><input type="checkbox" name="terms"> I’m 18 or older and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. Next Level is a marketplace, not an agent.</label>
+      <label class="check"><input type="checkbox" name="terms"> I’m 18 or older and agree to the <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>. Varsy is a marketplace, not an agent.</label>
       <p class="err" hidden></p>
       <button class="btn pri block lg">Create account</button>
     </form>`);
@@ -460,7 +460,7 @@ function authSheet(mode, preRole) {
   s.querySelectorAll('[data-mode]').forEach(t => t.onclick = () => {
     const m = t.dataset.mode; s.querySelectorAll('[data-mode]').forEach(x => x.setAttribute('aria-selected', x === t));
     s.querySelector('[data-form=login]').hidden = m !== 'in'; s.querySelector('[data-form=signup]').hidden = m === 'in';
-    s.querySelector('.sheet-h h2').textContent = m === 'in' ? 'Log in' : 'Join Next Level';
+    s.querySelector('.sheet-h h2').textContent = m === 'in' ? 'Log in' : 'Join Varsy';
   });
 }
 
@@ -517,9 +517,9 @@ function composer(preType) {
       <div class="grid2"><label class="field"><span>Your team</span><input class="in" name="n_team" maxlength="60" value="${esc(me.sch)}"></label><label class="field"><span>Opponent</span><input class="in" name="n_opp" maxlength="60" placeholder="e.g. TCU"></label></div>
       <div class="grid3"><label class="field"><span>Your score</span><input class="in" name="n_us" inputmode="numeric" maxlength="3"></label><label class="field"><span>Their score</span><input class="in" name="n_them" inputmode="numeric" maxlength="3"></label><label class="field"><span>Event <small>(optional)</small></span><input class="in" name="n_event" maxlength="60" placeholder="Conference"></label></div></div>
     ${me.role === 'athlete' ? `<p class="small dim" data-news="Commitment Signing Transfer" hidden style="margin:0">Only announce once it’s official and you’re ready to share it. Coaches can’t post about recruits before they sign.</p>` : ''}
-    <label class="field" data-partner hidden><span>Brand partner</span><input class="in" name="partner" maxlength="60" placeholder="Who is this partnership with?"><small>Next Level labels this post as a paid partnership, as the FTC requires.</small></label>
+    <label class="field" data-partner hidden><span>Brand partner</span><input class="in" name="partner" maxlength="60" placeholder="Who is this partnership with?"><small>Varsy labels this post as a paid partnership, as the FTC requires.</small></label>
     <label class="field"${team ? ' hidden' : ''}><span>Opponent or event <small>(optional)</small></span><input class="in" name="tag" maxlength="60" placeholder="e.g. vs. Baylor · Big 12 Championships"></label>
-    <label class="field"><span>Caption</span><textarea class="in" name="cap" maxlength="600" rows="${team ? 7 : 4}" placeholder="${team ? 'What do you want everyone on Next Level to know?' : 'What happened?'}"></textarea></label>
+    <label class="field"><span>Caption</span><textarea class="in" name="cap" maxlength="600" rows="${team ? 7 : 4}" placeholder="${team ? 'What do you want everyone on Varsy to know?' : 'What happened?'}"></textarea></label>
     <p class="err" hidden></p></form>`, `<button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="sendpost">Post</button>`);
   const f = s.querySelector('form'), type = f.type, part = s.querySelector('[data-partner]');
   const sync = () => { const t = type.value; part.hidden = t !== 'NIL partner';
@@ -578,7 +578,7 @@ function viewsCard(me) {
 }
 function homeAside() {
   const me = ME(), d = D();
-  if (!me) return `<div class="card pad stack"><h2 class="h2">Join Next Level</h2><p class="muted small" style="margin:0">Follow athletes, give props and join the conversation. Free.</p><button class="btn pri" data-act="join">Join free</button></div>`;
+  if (!me) return `<div class="card pad stack"><h2 class="h2">Join Varsy</h2><p class="muted small" style="margin:0">Follow athletes, give props and join the conversation. Free.</p><button class="btn pri" data-act="join">Join free</button></div>`;
   if (me.role === 'athlete') {
     const items = profileTodo(me), done = items.filter(i => i[1]).length, pct = Math.round(done / items.length * 100);
     const active = d.offers.filter(o => o.to === me.id && ['Active', 'Delivered'].includes(o.status)).length;
@@ -656,7 +656,7 @@ function search() {
   const opt = (arr, v) => arr.map(x => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
   return { title: r === 'brand' ? 'Find athletes' : 'Athletes', html: `<div class="page">
     <div class="ph"><div><h1 class="h1">${r === 'brand' ? 'Find athletes' : r === 'coach' ? 'Search athletes' : 'Athletes'}</h1>
-      <p>${r === 'brand' ? 'Every athlete here is a current college athlete. Offers you send are checked for compliance first.' : r === 'coach' ? 'Filter by sport, position, class and state. Add anyone to your private board.' : 'College athletes on Next Level.'}</p></div></div>
+      <p>${r === 'brand' ? 'Every athlete here is a current college athlete. Offers you send are checked for compliance first.' : r === 'coach' ? 'Filter by sport, position, class and state. Add anyone to your private board.' : 'College athletes on Varsy.'}</p></div></div>
     <form class="filters" data-form="filters">
       <input class="in" name="q" placeholder="Name, school or hometown" value="${esc(f.q)}" aria-label="Search" style="grid-column:span 2">
       <select class="in" name="sp" aria-label="Sport"><option value="">All sports</option>${opt(SPORTS, f.sp)}</select>
@@ -702,7 +702,7 @@ function profile(id) {
     <h1><span class="plate">${u.role === 'athlete' && u.num ? `<span class="num">${esc(u.num)}</span>` : ''}<span class="nmtxt">${esc(nameOf(u))}</span></span>${u.verified ? VF : ''}</h1>
     <div class="line1">${esc(u.role === 'brand' ? (u.brand && u.brand.cat) || 'Brand' : u.role === 'athlete' ? [u.sp, u.pos, u.yr].filter(Boolean).join(' · ') : u.role === 'coach' ? [u.title || 'Coach', u.sp, u.div].filter(Boolean).join(' · ') : u.role === 'team' ? 'Official account' : 'Fan')}</div>
     <div class="line2">${u.role === 'brand' ? esc([u.f + ' ' + u.l, u.home, u.st].filter(Boolean).join(' · ')) : (u.sch ? `<a class="schl" href="${schoolHref(u.sch)}">${esc(u.sch)}</a>` : '') + (u.st ? esc((u.sch ? ', ' : '') + u.st) : '')}${u.role === 'brand' && u.brand && u.brand.site ? ` · <a href="${esc(u.brand.site)}" target="_blank" rel="noopener noreferrer">${esc(u.brand.site.replace(/^https:\/\/(www\.)?/, '').replace(/\/$/, ''))}</a>` : ''}</div>
-    ${u.portal ? '<div style="margin-top:10px"><span class="tag yellow">In the transfer portal</span></div>' : ''}${counts}<div class="printonly small" style="margin-top:6px">Next Level profile: ${esc(location.origin + '/a/' + u.id)}</div>
+    ${u.portal ? '<div style="margin-top:10px"><span class="tag yellow">In the transfer portal</span></div>' : ''}${counts}<div class="printonly small" style="margin-top:6px">Varsy profile: ${esc(location.origin + '/a/' + u.id)}</div>
     ${u.role === 'athlete' && (u.stats || []).length ? `<div class="bigstats">${u.stats.map(x => `<div><b>${esc(x.v)}</b><span>${esc(x.k)}</span></div>`).join('')}</div>` : ''}
     ${mine && u.role === 'athlete' && !(u.stats || []).length ? `<div class="note" style="margin-top:16px">${ic('info')}<span><b>Add your stats.</b> Coaches and brands see them first. <a href="#/edit">Add stats</a></span></div>` : ''}
     ${mine && !u.verified && (u.role === 'athlete' || u.role === 'coach') ? `<div class="note" style="margin-top:12px">${ic('shield')}<span><b>Not verified yet.</b> We verify ${u.role === 'athlete' ? 'athletes against official team rosters' : 'coaches against school staff directories'}. Email <a href="mailto:${SUPPORT}?subject=Verification">${SUPPORT}</a> from your school email to speed it up.</span></div>` : ''}
@@ -751,7 +751,7 @@ function newsPage() {
   const list = all.filter(p => (!t || p.type === t) && (!sp || p.sport === sp));
   const canPost = me && (me.role === 'athlete' || me.role === 'coach');
   return { title: 'News', html: `<div class="page narrow">
-    <div class="ph"><div><h1 class="h1">News</h1><p>Commitments, signings, transfers, results and awards, posted by athletes and coaches on Next Level.</p></div>${canPost ? `<button class="btn pri" data-act="composenews">${ic('plus')}${me.role === 'coach' ? 'Post news' : 'Share news'}</button>` : ''}</div>
+    <div class="ph"><div><h1 class="h1">News</h1><p>Commitments, signings, transfers, results and awards, posted by athletes and coaches on Varsy.</p></div>${canPost ? `<button class="btn pri" data-act="composenews">${ic('plus')}${me.role === 'coach' ? 'Post news' : 'Share news'}</button>` : ''}</div>
     <div class="tabs" role="tablist">${NEWS_TABS.map(([k, l]) => `<button role="tab" aria-selected="${t === k}" data-act="ntype" data-v="${esc(k)}">${l}${k ? ` <span class="count">${all.filter(p => p.type === k).length || ''}</span>` : ''}</button>`).join('')}</div>
     ${sports.length > 1 ? `<div class="row wrap" style="margin-bottom:12px">${['', ...sports].map(x => `<button class="chip" data-act="nsp" data-v="${esc(x)}" aria-pressed="${sp === x}">${esc(x || 'All sports')}</button>`).join('')}</div>` : ''}
     ${list.length ? `<div class="stack">${list.slice(0, 80).map(postCard).join('')}</div>` : `<div class="card">${empty('flag', all.length ? 'Nothing here yet' : 'No news yet', canPost ? (me.role === 'coach' ? 'Post a final score or program update.' : 'Committed, signed or won an award? Share it here.') : 'Commitments, signings and results show up here as athletes and coaches post them.', canPost ? `<button class="btn pri" data-act="composenews">${ic('plus')}${me.role === 'coach' ? 'Post news' : 'Share news'}</button>` : '')}</div>`}
@@ -963,7 +963,7 @@ function athleteDeals() {
       <div class="card stat"><b>${sets.done.length}</b><span>Completed</span></div></div>
     ${me.intl ? `<div class="note warn" style="margin-bottom:16px">${ic('alert')}<span><b>International student?</b> Visa rules may limit NIL work in the U.S. Talk to your international student office before accepting any deal.</span></div>` : ''}
     <div class="tabs" role="tablist">${T.map(([k, l, n]) => `<button role="tab" aria-selected="${tab === k}" data-act="tab" data-k="adeals" data-v="${k}">${l}${n ? ` <span class="count">${n}</span>` : ''}</button>`).join('')}</div>${body}
-    <p class="tiny dim" style="margin-top:20px">Next Level is free for athletes and never takes a cut of your pay. Payments happen directly between you and the brand for now. NIL income is usually taxable, so keep a record of what you’re paid. Next Level is a marketplace, not an agent.</p></div>` };
+    <p class="tiny dim" style="margin-top:20px">Varsy is free for athletes and never takes a cut of your pay. Payments happen directly between you and the brand for now. NIL income is usually taxable, so keep a record of what you’re paid. Varsy is a marketplace, not an agent.</p></div>` };
 }
 function brandDeals() {
   const me = ME(), mine = D().offers.filter(o => o.brandId === me.id).sort((a, b) => b.at - a.at);
@@ -1082,7 +1082,7 @@ function settings() {
     ${(me.blocked || []).length ? `<div class="card"><div class="card-h"><h2 class="h2">Blocked</h2></div><div class="list">${me.blocked.map(id => `<div class="row" style="padding:12px 16px"><span class="grow small">Account #${id}</span><button class="btn sm" data-act="unblock" data-id="${id}">Unblock</button></div>`).join('')}</div></div>` : ''}
     <div class="card"><div class="card-h"><h2 class="h2">Help and legal</h2></div><div class="card-b stack small">
       <a href="/terms.html">Terms of Service</a><a href="/privacy.html">Privacy Policy</a><a href="mailto:${SUPPORT}">Contact support</a>
-      <span class="dim">Next Level is a marketplace, not an agent. We don’t give legal, tax or financial advice.</span></div></div>
+      <span class="dim">Varsy is a marketplace, not an agent. We don’t give legal, tax or financial advice.</span></div></div>
     <div class="card"><div class="card-b row between wrap"><button class="btn" data-act="logout">${ic('out')}Log out</button><button class="btn danger" data-act="delacct">${ic('trash')}Delete account</button></div></div></div>` };
 }
 function pairEditor(name, list, max, hints) {
@@ -1212,17 +1212,17 @@ const ACT = {
   close: () => closeSheet(),
   storycard: el => run(el, async () => {
     const me = ME(), blob = await storyCard(me); if (!blob) throw new Error('Couldn’t make the image. Try again.');
-    const url = URL.createObjectURL(blob), file = (me.f + '-' + me.l).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-next-level.png';
+    const url = URL.createObjectURL(blob), file = (me.f + '-' + me.l).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-varsy.png';
     sheet('Your card', `<div class="stack"><img src="${url}" alt="Your athlete card image" style="width:100%;max-width:300px;justify-self:center;border-radius:12px;border:1px solid var(--line2)">
       <p class="small muted" style="margin:0;text-align:center">Post it to your story with your profile link so coaches and brands can find you.</p></div>`,
       `<button class="btn" data-act="copytext" data-v="${esc(location.origin + '/a/' + me.id)}">Copy profile link</button><a class="btn pri" href="${url}" download="${esc(file)}">Download image</a>`);
   }),
   csvdeals: () => {
     const me = ME(), mine = D().offers.filter(o => me.role === 'brand' ? o.brandId === me.id : o.to === me.id).sort((a, b) => a.at - b.at);
-    csv(me.role === 'brand' ? 'next-level-deals.csv' : 'next-level-earnings.csv', [[me.role === 'brand' ? 'Athlete' : 'Brand', 'Category', 'Work', 'Amount (USD)', 'Status', 'Offered', 'Accepted', 'Delivered', 'Completed', 'Post link'],
+    csv(me.role === 'brand' ? 'varsy-deals.csv' : 'varsy-earnings.csv', [[me.role === 'brand' ? 'Athlete' : 'Brand', 'Category', 'Work', 'Amount (USD)', 'Status', 'Offered', 'Accepted', 'Delivered', 'Completed', 'Post link'],
       ...mine.map(o => [me.role === 'brand' ? nameOf(user(o.to)) : o.brand, o.cat, o.what, o.amt, o.status, day(o.at), o.status !== 'Declined' ? day(o.answered) : '', day(o.delivered), day(o.completed), o.proof])]);
   },
-  csvaccounts: () => csv('next-level-accounts.csv', [['ID', 'Name', 'Email', 'Type', 'School', 'Sport', 'Verified', 'Joined'],
+  csvaccounts: () => csv('varsy-accounts.csv', [['ID', 'Name', 'Email', 'Type', 'School', 'Sport', 'Verified', 'Joined'],
     ...D().admin.accounts.map(u => [u.id, nameOf(u), u.email, ROLE_NAME[u.role], u.sch, u.sp, u.verified ? 'Yes' : 'No', day(u.created)])]),
   sendedit: el => run(el, async () => { const f = $('[data-form=editpost]'); try { take(await api('/api/posts/edit', { id: +f.dataset.id, cap: f.cap.value, tag: f.tag.value })); } catch (e) { return formErr(f, e.message); } closeSheet(); toast('Post updated'); render(); }),
   zoom: el => { const s = sheet('Photo', `<img src="${esc(el.dataset.src)}" alt="" style="width:100%;max-height:75dvh;object-fit:contain;border-radius:8px;background:#000">`, '', { wide: true }); },
@@ -1357,7 +1357,7 @@ function resetPw(u) {
     const r = await api('/api/admin/reset', { id: u.id }); await refresh(); render();
     sheet('Temporary password', `<div class="stack"><p class="muted" style="margin:0">Send this to <b>${esc(r.email)}</b>. They’ll be asked to choose a new one after logging in.</p>
       <input class="in" readonly value="${esc(r.temp)}" style="font-size:18px;letter-spacing:.04em" aria-label="Temporary password">
-      <p class="tiny dim" style="margin:0">It won’t be shown again.</p></div>`, `<button class="btn" data-act="copytext" data-v="${esc(r.temp)}">Copy</button><a class="btn pri" href="mailto:${esc(r.email)}?subject=${encodeURIComponent('Your Next Level temporary password')}">Email them</a>`);
+      <p class="tiny dim" style="margin:0">It won’t be shown again.</p></div>`, `<button class="btn" data-act="copytext" data-v="${esc(r.temp)}">Copy</button><a class="btn pri" href="mailto:${esc(r.email)}?subject=${encodeURIComponent('Your Varsy temporary password')}">Email them</a>`);
   }));
 }
 function removeAcct(u) {
@@ -1387,7 +1387,7 @@ async function storyCard(u) {
   // brand mark
   x.strokeStyle = '#22A6FF'; x.lineWidth = 9; x.lineCap = x.lineJoin = 'round'; x.beginPath(); x.moveTo(80, 152); x.lineTo(112, 124); x.lineTo(144, 152); x.stroke();
   x.strokeStyle = '#FFE500'; x.lineWidth = 8; x.beginPath(); x.moveTo(92, 130); x.lineTo(112, 112); x.lineTo(132, 130); x.stroke();
-  x.fillStyle = '#ECEEF1'; x.font = `600 64px ${D_}`; x.textBaseline = 'alphabetic'; x.fillText('NEXT LEVEL', 166, 160);
+  x.fillStyle = '#ECEEF1'; x.font = `600 64px ${D_}`; x.textBaseline = 'alphabetic'; x.fillText('VARSY', 166, 160);
   // photo
   let y = 760;
   if (u.av) { const im = await load(u.av); if (im) { x.save(); x.beginPath(); x.arc(200, 560, 120, 0, Math.PI * 2); x.clip(); const k = Math.max(240 / im.width, 240 / im.height); x.drawImage(im, 200 - im.width * k / 2, 560 - im.height * k / 2, im.width * k, im.height * k); x.restore();
@@ -1410,10 +1410,10 @@ async function storyCard(u) {
     x.fillStyle = '#121418'; x.beginPath(); x.roundRect(cx, cy, 450, bh, 20); x.fill(); x.strokeStyle = '#262A31'; x.lineWidth = 2; x.stroke();
     x.fillStyle = '#FFE500'; fit(s2.v, 600, Math.round(bh * .58), D_, 390, 50); x.fillText(s2.v, cx + 32, cy + bh * .64);
     x.fillStyle = '#6E7580'; fit(s2.k.toUpperCase(), 500, 32, B_, 390, 20); x.fillText(s2.k.toUpperCase(), cx + 32, cy + bh - 30); });
-  else { x.fillStyle = '#A3A9B3'; x.font = `400 40px ${B_}`; x.fillText('Add your stats on Next Level', 80, y + 60); }
+  else { x.fillStyle = '#A3A9B3'; x.font = `400 40px ${B_}`; x.fillText('Add your stats on Varsy', 80, y + 60); }
   // footer
   x.fillStyle = '#22A6FF'; x.fillRect(0, H - 220, W, 6);
-  x.fillStyle = '#ECEEF1'; fit('SEE MY CARD ON NEXT LEVEL', 600, 72, D_, W - 160, 36); x.fillText('SEE MY CARD ON NEXT LEVEL', 80, H - 110);
+  x.fillStyle = '#ECEEF1'; fit('SEE MY CARD ON VARSY', 600, 72, D_, W - 160, 36); x.fillText('SEE MY CARD ON VARSY', 80, H - 110);
   x.fillStyle = '#A3A9B3'; fit(location.host + '/a/' + u.id, 400, 38, B_, W - 160, 22); x.fillText(location.host + '/a/' + u.id, 80, H - 56);
   return new Promise(ok => c.toBlob(ok, 'image/png'));
 }
@@ -1475,7 +1475,7 @@ const FORM = {
     if (b.role === 'athlete' && !data.adult) return formErr(f, 'Athlete accounts are for enrolled college athletes 18 or older.');
     try { take(await api('/api/signup', data)); } catch (e) { return formErr(f, e.message); }
     closeSheet(); const r = ME().role;
-    toast(r === 'athlete' ? 'Welcome! Finish your card so coaches and brands can find you.' : 'Welcome to Next Level');
+    toast(r === 'athlete' ? 'Welcome! Finish your card so coaches and brands can find you.' : 'Welcome to Varsy');
     go(r === 'athlete' ? 'edit' : r === 'coach' ? 'athletes' : r === 'brand' ? 'home' : 'athletes');
   },
   comment: async f => { const t = f.t.value.trim(); if (!t) return; await api('/api/comments', { post: +f.dataset.id, t }); await refresh(); render(); const i = $(`#post-${f.dataset.id} [name=t]`); if (i) i.focus(); },

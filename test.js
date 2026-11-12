@@ -238,13 +238,13 @@ server.listen(0, async () => {
     ok((await call('/api/posts', { type: 'Program news', news: { headline: 'Spring schedule released' } }, C2)).s === 200, 'program news');
     ok((await call('/api/posts', { type: 'Result', news: { opp: 'x', us: 1, them: 2 } }, B.token)).s === 403, 'brands cannot post');
 
-    // --- official Next Level account
-    ok((await call('/api/admin/official', { confirm: 'NEXT LEVEL' }, A.token)).s === 403, 'official: admins only');
+    // --- official Varsy account
+    ok((await call('/api/admin/official', { confirm: 'VARSY' }, A.token)).s === 403, 'official: admins only');
     ok((await call('/api/admin/official', { confirm: 'yes' }, O.token)).s === 400, 'official: needs confirmation');
-    let ofc = await call('/api/admin/official', { confirm: 'NEXT LEVEL' }, O.token);
-    ok(ofc.s === 200 && ofc.j.me.role === 'team' && ofc.j.me.f === "Next" && ofc.j.me.l === "Level" && ofc.j.me.verified && ofc.j.me.admin, 'official: converted, keeps admin');
+    let ofc = await call('/api/admin/official', { confirm: 'VARSY' }, O.token);
+    ok(ofc.s === 200 && ofc.j.me.role === 'team' && ofc.j.me.f === "Varsy" && ofc.j.me.verified && ofc.j.me.admin, 'official: converted, keeps admin');
     ok(!ofc.j.posts.some(p => p.by === O.me.id), 'official: old posts removed');
-    let tp = await call('/api/posts', { type: 'Announcement', cap: 'Welcome to Next Level.' }, O.token);
+    let tp = await call('/api/posts', { type: 'Announcement', cap: 'Welcome to Varsy.' }, O.token);
     ok(tp.s === 200 && tp.j.post.type === 'Announcement' && tp.j.post.sport === '' && tp.j.post.season === '', 'official: can post announcements');
     ok((await call('/api/posts', { type: 'Commitment', cap: 'x', news: { school: 'UT' } }, O.token)).j.post.type === 'Announcement', 'official: athlete types fall back');
     ok((await call('/api/login', { email: 'owner@test.dev', password: 'password123' }, null, '5.5.5.5')).s === 200, 'official: same login works');

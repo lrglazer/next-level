@@ -1,4 +1,4 @@
-// Next Level server: accounts, posts with photos, props, comments, DMs, NIL offers with server-side
+// Varsy server: accounts, posts with photos, props, comments, DMs, NIL offers with server-side
 // compliance checks, brand campaigns, follows, reports and blocking. No dependencies beyond Node.
 const http = require('http');
 const fs = require('fs');
@@ -21,7 +21,7 @@ const TYPES = ['Highlight', 'Game day', 'Training log', 'Behind the scenes', 'NI
 // News is the subset of posts with a headline: who committed or signed where, final scores, awards.
 const NEWS = ['Commitment', 'Signing', 'Transfer', 'Result', 'Award', 'Program news'];
 const ATHLETE_TYPES = TYPES, COACH_TYPES = ['Result', 'Program news', 'Award'];
-// The official Next Level account (role 'team') posts announcements, athlete spotlights and how-to guides.
+// The official Varsy account (role 'team') posts announcements, athlete spotlights and how-to guides.
 const TEAM_TYPES = ['Announcement', 'Spotlight', 'Guide'];
 const PROPS = ['clutch', 'locked', 'goat'];
 const STAGES = ['Watching', 'Evaluating', 'Offered', 'Committed'];
@@ -69,7 +69,7 @@ function commentsOut(viewer) {
   for (const c of D.comments) {
     if (reported('comment', c.id) || hidden(viewer, c.by)) continue;
     const u = userById(c.by); if (!u) continue;
-    (out[c.post] = out[c.post] || []).push({ id: c.id, by: c.by, name: u.f + ' ' + u.l, t: c.t, at: c.at });
+    (out[c.post] = out[c.post] || []).push({ id: c.id, by: c.by, name: (u.f + ' ' + u.l).trim(), t: c.t, at: c.at });
   }
   for (const k of Object.keys(out)) out[k] = out[k].slice(-60);
   return out;
@@ -84,7 +84,7 @@ function offerOut(o) { return o && { id: o.id, brand: o.brandName, brandId: o.br
 
 // What happened to you lately: offers, props, comments, follows and campaign applicants.
 function notesFor(u) {
-  const out = [], mine = new Set(D.posts.filter(p => p.by === u.id).map(p => p.id)), name = id => { const x = userById(id); return x ? (x.role === 'brand' && x.brand ? x.brand.name : x.f + ' ' + x.l) : 'Someone'; };
+  const out = [], mine = new Set(D.posts.filter(p => p.by === u.id).map(p => p.id)), name = id => { const x = userById(id); return x ? (x.role === 'brand' && x.brand ? x.brand.name : (x.f + ' ' + x.l).trim()) : 'Someone'; };
   const cap = id => { const p = D.posts.find(x => x.id === id); return p ? (p.tag || p.pr || p.cap).slice(0, 40) : 'your post'; };
   for (const o of D.offers) if (o.to === u.id) out.push({ by: o.brand, k: 'offer', who: name(o.brand), t: `sent you an NIL offer: $${o.amt.toLocaleString()}`, at: o.at, go: 'deals' });
   for (const o of D.offers) if (o.brand === u.id && o.answered) out.push({ by: o.to, k: 'offer', who: name(o.to), t: o.status === 'Declined' ? 'passed on your offer' : `accepted your $${o.amt.toLocaleString()} offer`, at: o.answered, go: 'deals' });
@@ -128,7 +128,7 @@ function adminOut() {
   const what = r => {
     if (r.kind === 'post') { const p = D.posts.find(x => x.id === r.id); return p ? { text: p.cap, img: p.img ? '/media/' + p.img : null, by: p.by } : null; }
     if (r.kind === 'comment') { const c = D.comments.find(x => x.id === r.id); return c ? { text: c.t, by: c.by } : null; }
-    if (r.kind === 'user') { const u = userById(r.id); return u ? { text: u.f + ' ' + u.l, by: u.id } : null; }
+    if (r.kind === 'user') { const u = userById(r.id); return u ? { text: (u.f + ' ' + u.l).trim(), by: u.id } : null; }
     return { text: 'Message', by: null };
   };
   return {
@@ -190,7 +190,7 @@ const routes = {
     if (role === 'athlete' && !str(b.sp, 30)) throw err(400, 'Add your sport.');
     if (role === 'coach' && (!str(b.sch, 60) || !str(b.sp, 30))) throw err(400, 'Add the school and sport you coach so we can verify you.');
     if (role === 'brand' && !str(b.brandName, 60)) throw err(400, 'Add your brand or business name.');
-    if (role === 'brand' && BANNED.includes(b.cat)) throw err(400, `${b.cat} brands can’t work with college athletes on Next Level.`);
+    if (role === 'brand' && BANNED.includes(b.cat)) throw err(400, `${b.cat} brands can’t work with college athletes on Varsy.`);
     const fields = { role, f, l, sch: str(b.sch, 60), sp: str(b.sp, 30), pos: str(b.pos, 12), yr: str(b.yr, 6), st: str(b.st, 2).toUpperCase(),
       num: str(b.num, 3), bio: '', verified: false, adult: !!b.adult, title: role === 'coach' ? str(b.title, 40) : '' };
     if (role === 'athlete') { fields.rate = [150, 500, 1000]; fields.open = ['Apparel', 'Fitness', 'Food & drink']; fields.intl = !!b.intl; }
@@ -234,7 +234,7 @@ const routes = {
       if (Array.isArray(b.open)) u.open = b.open.filter(c => CATS.includes(c));
     }
     if (u.role === 'brand' && b.brand && typeof b.brand === 'object') {
-      if (BANNED.includes(b.brand.cat)) throw err(400, `${b.brand.cat} brands can’t work with college athletes on Next Level.`);
+      if (BANNED.includes(b.brand.cat)) throw err(400, `${b.brand.cat} brands can’t work with college athletes on Varsy.`);
       const site = str(b.brand.site, 100);
       if (site && !httpsUrl(site)) throw err(400, 'Website must be a full https:// link.');
       u.brand = { name: str(b.brand.name, 60) || u.brand?.name || '', cat: CATS.includes(b.brand.cat) ? b.brand.cat : (u.brand?.cat || 'Local business'), site: site ? httpsUrl(site) : '' };
@@ -387,7 +387,7 @@ const routes = {
     limit('offer:' + u.id, 20, 3600e3);
     const o = offerFields(b), checks = checkOffer(o, a);
     if (checks.some(c => !c.ok)) throw err(400, 'This offer can’t be sent. ' + checks.filter(c => !c.ok).map(c => c.d).join(' '));
-    const offer = { id: db.nextId(), brand: u.id, brandName: u.brand?.name || u.f + ' ' + u.l, to: a.id, ...o, checks, status: 'Offer', at: Date.now() };
+    const offer = { id: db.nextId(), brand: u.id, brandName: u.brand?.name || (u.f + ' ' + u.l).trim(), to: a.id, ...o, checks, status: 'Offer', at: Date.now() };
     D.offers.push(offer); db.touch('offers');
     addMessage(u, a.id, { t: str(b.note, 400) || `Hi ${a.f}! We’d love to work with you.`, offer: offer.id });
     return { offer: offerOut(offer) };
@@ -509,18 +509,18 @@ const routes = {
     db.deleteUser(u); D.reports = D.reports.filter(r => !(r.kind === 'user' && r.id === u.id)); db.touch('reports');
     return sync(ctx.user);
   } },
-  // Turns the owner's own login into the official Next Level account: personal details, posts and follows are removed,
-  // the login and admin access stay. Confirmed by typing NEXT LEVEL. Can't be undone from the app.
+  // Turns the owner's own login into the official Varsy account: personal details, posts and follows are removed,
+  // the login and admin access stay. Confirmed by typing VARSY. Can't be undone from the app.
   'POST /api/admin/official': { auth: true, fn: async (b, ctx) => {
     const u = ctx.user;
     if (!isAdmin(u)) throw err(403, 'Admins only.');
-    if (b.confirm !== 'NEXT LEVEL') throw err(400, 'Type NEXT LEVEL to confirm.');
+    if (b.confirm !== 'VARSY') throw err(400, 'Type VARSY to confirm.');
     const old = new Set(D.posts.filter(p => p.by === u.id).map(p => p.id));
     D.posts = D.posts.filter(p => !old.has(p.id)); D.props = D.props.filter(x => !old.has(x.post)); D.comments = D.comments.filter(c => !old.has(c.post));
     D.follows = D.follows.filter(f => f.by !== u.id && f.to !== u.id);
     for (const k of ['sch', 'sp', 'pos', 'yr', 'st', 'num', 'ht', 'wt', 'home', 'grad', 'gpa', 'major', 'hl', 'title', 'div', 'av']) u[k] = '';
-    Object.assign(u, { role: 'team', f: 'Next', l: 'Level', verified: true, stats: [], meas: [], awards: [], soc: {}, rate: null, open: [], brand: null, pin: null, portal: false, appear: null, open4: false,
-      bio: str(b.bio, 600) || 'The official Next Level account. The social app for college athletes: profiles, recruiting, news and NIL deals checked against the rules. Free for athletes, always.' });
+    Object.assign(u, { role: 'team', f: 'Varsy', l: '', verified: true, stats: [], meas: [], awards: [], soc: {}, rate: null, open: [], brand: null, pin: null, portal: false, appear: null, open4: false,
+      bio: str(b.bio, 600) || 'The official Varsy account. The social app for college athletes: profiles, recruiting, news and NIL deals checked against the rules. Free for athletes, always.' });
     ['users', 'posts', 'props', 'comments', 'follows'].forEach(c => db.touch(c));
     return sync(u);
   } },
@@ -601,13 +601,13 @@ const server = http.createServer(async (req, res) => {
     if (share) {
       const u = userById(share[1]), origin = 'https://' + String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
       const h = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-      const title = u ? (u.role === 'brand' && u.brand ? u.brand.name : u.f + ' ' + u.l) + ' · Next Level' : 'Next Level';
+      const title = u ? (u.role === 'brand' && u.brand ? u.brand.name : (u.f + ' ' + u.l).trim()) + ' · Varsy' : 'Varsy';
       const desc = !u ? 'Recruiting and compliant NIL deals for college athletes.' : u.role === 'athlete'
         ? [[u.sp, u.pos, u.yr].filter(Boolean).join(' · '), u.sch, (u.stats || []).slice(0, 3).map(x => x.v + ' ' + x.k).join(' · ')].filter(Boolean).join(' — ')
-        : (u.bio || 'On Next Level');
+        : (u.bio || 'On Varsy');
       const img = u && u.av ? origin + '/media/' + u.av : origin + '/icon.svg', to = u ? '/#/u/' + u.id : '/';
       return send(res, 200, `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${h(title)}</title><meta name="description" content="${h(desc)}">
-<meta property="og:type" content="profile"><meta property="og:site_name" content="Next Level"><meta property="og:title" content="${h(title)}"><meta property="og:description" content="${h(desc)}">
+<meta property="og:type" content="profile"><meta property="og:site_name" content="Varsy"><meta property="og:title" content="${h(title)}"><meta property="og:description" content="${h(desc)}">
 <meta property="og:image" content="${h(img)}"><meta property="og:url" content="${h(origin + url.pathname)}"><meta name="twitter:card" content="summary">
 <meta http-equiv="refresh" content="0;url=${h(to)}"><link rel="icon" href="/icon.svg"></head><body style="background:#0B0C0E;color:#ECEEF1;font-family:system-ui;padding:24px"><a href="${h(to)}" style="color:#22A6FF">Open ${h(title)}</a></body></html>`, 'text/html; charset=utf-8', { 'cache-control': 'no-cache' });
     }
@@ -623,5 +623,5 @@ const server = http.createServer(async (req, res) => {
     send(res, e.status || 500, { error: e.status ? e.message : 'Something went wrong on our side. Try again.' });
   }
 });
-if (require.main === module) server.listen(PORT, () => console.log('Next Level on :' + PORT));
+if (require.main === module) server.listen(PORT, () => console.log('Varsy on :' + PORT));
 module.exports = { server, db };
