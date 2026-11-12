@@ -34,6 +34,7 @@ const [base, out, W] = process.argv.slice(2); let n = 0; fs.mkdirSync(out, { rec
   await a.goto(base + '/#/deals'); await a.click('[data-act=tab][data-v=active]'); await a.click('[data-act=deliver]'); await check(a, 'deliver');
   await a.click('[data-act=disclose]'); await check(a, 'disclose');
   await a.click('[data-act=tab][data-v=opps]'); await a.click('[data-act=apply]'); await check(a, 'apply');
+  await a.goto(base + '/#/edit'); await a.click('[data-act=avadjust]'); await a.waitForSelector('.crop canvas'); await check(a, 'photo-editor');
   await a.goto(base + '/#/settings'); await a.click('[data-act=delacct]'); await check(a, 'delete-account');
   await b.goto(base + '/#/u/' + aid); await b.click('[data-act=offer]'); await b.fill('[data-form=offer] [name=amt]', '400'); await b.waitForTimeout(800); await check(b, 'offer');
   await b.goto(base + '/#/campaigns'); await b.click('.ph [data-act=newcamp]'); await check(b, 'campaign-new');

@@ -92,6 +92,7 @@ const P = {
   noc: '<circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
   inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>',
+  rotate: '<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>',
   star: '<path d="m12 2 3 6.5 7 .8-5.2 4.7 1.5 7-6.3-3.6L5.7 21l1.5-7L2 9.3l7-.8z"/>'
 };
 const ic = (n, cls) => `<svg${cls ? ` class="${cls}"` : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;
@@ -1024,7 +1025,7 @@ function editProfile() {
   const me = ME(), d = D(), r = me.role, soc = me.soc || {};
   const opt = (arr, v, blank) => (blank ? `<option value="">${blank}</option>` : '') + arr.map(x => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
   const sec = (t, body, sub) => `<div class="card"><div class="card-h"><div><h2 class="h2">${t}</h2>${sub ? `<div class="small dim" style="margin-top:4px">${sub}</div>` : ''}</div></div><div class="card-b stack">${body}</div></div>`;
-  const photo = sec(r === 'brand' ? 'Logo' : 'Photo', `<div class="row wrap" style="gap:16px">${avatar(me, 'lg')}<div class="row wrap"><label class="btn" for="avfile">${ic('camera')}${me.av ? 'Change' : 'Upload'}</label><input type="file" id="avfile" accept="image/jpeg,image/png,image/webp" hidden>${me.av ? '<button type="button" class="btn ghost" data-act="avrm">Remove</button>' : ''}</div></div>`);
+  const photo = sec(r === 'brand' ? 'Logo' : 'Photo', `<div class="row wrap" style="gap:16px">${avatar(me, 'lg')}<div class="row wrap"><label class="btn" for="avfile">${ic('camera')}${me.av ? 'Change' : 'Upload'}</label><input type="file" id="avfile" accept="image/jpeg,image/png,image/webp" hidden>${me.av ? `<button type="button" class="btn" data-act="avadjust">${ic('edit')}Adjust</button><button type="button" class="btn ghost" data-act="avrm">Remove</button>` : ''}</div></div>`);
   let body = '';
   if (r === 'athlete') {
     body = sec('Basics', `<div class="grid2"><label class="field"><span>First name</span><input class="in" name="f" maxlength="30" value="${esc(me.f)}"></label><label class="field"><span>Last name</span><input class="in" name="l" maxlength="30" value="${esc(me.l)}"></label></div>
@@ -1064,11 +1065,48 @@ function editProfile() {
     <div class="stack lg">${photo}<form class="stack lg" data-form="profile" novalidate>${body}<p class="err" hidden></p>
     <div class="row savebar"><a class="btn" href="#/u/${me.id}">Cancel</a><button class="btn pri lg">Save profile</button></div></form></div></div>`,
     after() {
-      const inp = $('#avfile'); if (inp) inp.onchange = e => { const f = e.target.files[0]; if (!f) return; run(null, async () => { const img = await readImage(f, 600); take(await api('/api/avatar', { img })); toast('Photo updated'); render(); }); };
+      const inp = $('#avfile'); if (inp) inp.onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; run(null, async () => cropper(await readImage(f, 2000))); };
     } };
 }
 function collectPairs(form, name) {
   return $$(`[data-pairs=${name}] .pr`, form).map(r => { const [k, v] = $$('input', r); return { k: k.value.trim(), v: v.value.trim() }; }).filter(x => x.k && x.v);
+}
+
+// ---------------------------------------------------------------- photo editor: drag to position, zoom, rotate
+function cropper(src) {
+  const me = ME(), square = me.role === 'brand', OUT = 600;
+  const s = sheet(square ? 'Edit logo' : 'Edit photo', `<div class="stack">
+    <div class="crop${square ? ' sq' : ''}"><canvas width="${OUT}" height="${OUT}" tabindex="0" aria-label="Photo position. Drag, or use arrow keys to move and plus or minus to zoom."></canvas><div class="crop-mask"></div></div>
+    <p class="small dim" style="margin:0;text-align:center">Drag to position. Pinch, scroll or use the slider to zoom.</p>
+    <div class="row" style="gap:12px">${ic('image', 'vf')}<input type="range" class="grow" min="1" max="4" step="0.01" value="1" aria-label="Zoom" data-zoom>${ic('search', 'vf')}</div>
+    <div class="row" style="justify-content:center"><button type="button" class="btn sm" data-rot>${ic('rotate')}Rotate</button><button type="button" class="btn ghost sm" data-reset>Reset</button><label class="btn ghost sm" for="avfile2">Choose another</label><input type="file" id="avfile2" accept="image/jpeg,image/png,image/webp" hidden></div>
+    <p class="err" hidden></p></div>`, `<button class="btn" data-act="close">Cancel</button><button class="btn pri" data-save>Save ${square ? 'logo' : 'photo'}</button>`);
+  const c = s.querySelector('canvas'), x = c.getContext('2d'), zoom = s.querySelector('[data-zoom]');
+  let img = null, z = 1, rot = 0, ox = 0, oy = 0;
+  const dims = () => { const w = rot % 180 ? img.naturalHeight : img.naturalWidth, h = rot % 180 ? img.naturalWidth : img.naturalHeight, base = Math.max(OUT / w, OUT / h); return { w: w * base * z, h: h * base * z, k: base * z }; };
+  const clamp = () => { const d = dims(), mx = Math.max(0, (d.w - OUT) / 2), my = Math.max(0, (d.h - OUT) / 2); ox = Math.max(-mx, Math.min(mx, ox)); oy = Math.max(-my, Math.min(my, oy)); };
+  const draw = () => { if (!img) return; clamp(); const d = dims(); x.fillStyle = '#0B0C0E'; x.fillRect(0, 0, OUT, OUT); x.save(); x.translate(OUT / 2 + ox, OUT / 2 + oy); x.rotate(rot * Math.PI / 180);
+    x.drawImage(img, -img.naturalWidth * d.k / 2, -img.naturalHeight * d.k / 2, img.naturalWidth * d.k, img.naturalHeight * d.k); x.restore(); };
+  const load = url => new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error('That photo couldn’t be opened. Try a JPG or PNG.')); i.src = url; });
+  const open = async url => { try { img = await load(url); z = 1; rot = 0; ox = oy = 0; zoom.value = 1; draw(); } catch (e) { formErr(s.querySelector('.stack'), e.message); } };
+  const setZoom = (v, cx, cy) => { const old = z; z = Math.max(1, Math.min(4, v)); if (cx != null) { ox = cx - (cx - ox) * z / old; oy = cy - (cy - oy) * z / old; } zoom.value = z; draw(); };
+  const ratio = () => OUT / c.getBoundingClientRect().width;
+  const pts = new Map(); let pinch = 0;
+  c.addEventListener('pointerdown', e => { c.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
+  c.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; const prev = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2) { const [a, b] = [...pts.values()], dd = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) setZoom(z * dd / pinch); pinch = dd; return; }
+    const r = ratio(); ox += (e.clientX - prev[0]) * r; oy += (e.clientY - prev[1]) * r; draw(); });
+  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; };
+  c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
+  c.addEventListener('wheel', e => { e.preventDefault(); const r = c.getBoundingClientRect(), k = ratio(); setZoom(z * (e.deltaY < 0 ? 1.08 : 1 / 1.08), (e.clientX - r.left) * k - OUT / 2, (e.clientY - r.top) * k - OUT / 2); }, { passive: false });
+  c.addEventListener('keydown', e => { const step = 20, m = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[e.key];
+    if (m) { e.preventDefault(); ox += m[0]; oy += m[1]; draw(); } else if (e.key === '+' || e.key === '=') setZoom(z * 1.1); else if (e.key === '-') setZoom(z / 1.1); });
+  zoom.addEventListener('input', () => setZoom(+zoom.value));
+  s.querySelector('[data-rot]').onclick = () => { rot = (rot + 90) % 360; ox = oy = 0; draw(); };
+  s.querySelector('[data-reset]').onclick = () => { z = 1; rot = 0; ox = oy = 0; zoom.value = 1; draw(); };
+  s.querySelector('#avfile2').onchange = e => { const f = e.target.files[0]; if (f) readImage(f, 2000).then(open, er => formErr(s.querySelector('.stack'), er.message)); };
+  s.querySelector('[data-save]').onclick = ev => run(ev.currentTarget, async () => { if (!img) return; const data = c.toDataURL('image/jpeg', 0.9); take(await api('/api/avatar', { img: data })); closeSheet(); toast(square ? 'Logo updated' : 'Photo updated'); render(); });
+  open(src);
 }
 
 // ---------------------------------------------------------------- admin
@@ -1223,6 +1261,7 @@ const ACT = {
   cat: el => { el.setAttribute('aria-pressed', el.getAttribute('aria-pressed') !== 'true'); },
   pairadd: el => { const box = el.closest('[data-pairs]'), n = $$('.pr', box).length; if (n >= +box.dataset.max) return toast('That’s the most you can add.'); const r = $('.pr', box).cloneNode(true); $$('input', r).forEach(i => { i.value = ''; }); el.before(r); $('input', r).focus(); },
   pairrm: el => { const box = el.closest('[data-pairs]'), r = el.closest('.pr'); if ($$('.pr', box).length > 1) r.remove(); else $$('input', r).forEach(i => { i.value = ''; }); },
+  avadjust: () => cropper(ME().av),
   avrm: el => run(el, async () => { take(await api('/api/avatar', { img: null })); toast('Photo removed'); render(); }),
   logout: () => logout(),
   unblock: el => toggleBlock(+el.dataset.id),
